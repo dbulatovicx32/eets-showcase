@@ -1,0 +1,1262 @@
+<!doctype html>
+<html lang="sr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>EETS Round 4 V2</title>
+<meta name="description" content="EETS home page, round 4, version 2: one white line drawing at a time, the keyword ring, three card cuts and three plain scrolls, with the bench.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..800&family=Geist+Mono:wght@400;500;600&display=swap">
+<style>
+/* layout: Breakthrough's model. One pinned stage on a tall scroll track; every frame is a layer with a window in screens
+   of scroll, and one driver (Lenis's unrounded position on the GSAP ticker) draws them all. The stage is a single
+   designed look (photos and colour fields); only the bench panel follows the light/dark theme. */
+:root {
+  --field: #A3CD30;          /* the brand colour slot: #A3CD30 for now (the bench can still try others) */
+  --field-ink: #101410;
+  --paper: #F1F0EC;
+  --paper-ink: #121512;
+  --photo-ink: #FFFFFF;
+  --night: #0B0C0B;
+  --scrim: rgba(0, 0, 0, .5);
+  --warn: #C2410C;
+  --bg: #E9E9E7; --surface: #F7F7F5; --ink: #121212; --ink-2: #3C3C3C; --muted: #6C6C6C; --rule: #CFCFCB;
+  --sans: "Geist", "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
+  --mono: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --t-hero: clamp(4.4rem, 15vw, 17rem);
+  --t-num: clamp(4.4rem, 14vw, 15rem);
+  --t-say: clamp(2rem, 4.6vw, 5.6rem);
+  --t-word: clamp(3rem, 11vw, 12rem);
+  --t-body: 15px;
+  --t-cap: 11px;
+  /* phones: statement lines at ~8 vw (Breakthrough 28.5-33.7 px, Joby 33.3, On 29.1 on a 390 screen; docs/refs/round4/type-scale.json) */
+  --t-say-m: clamp(26px, 8vw, 36px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --bg: #151515; --surface: #1D1D1D; --ink: #ECECEC; --ink-2: #C6C6C6; --muted: #8F8F8F; --rule: #313131; color-scheme: dark; }
+}
+:root[data-theme="dark"] { --bg: #151515; --surface: #1D1D1D; --ink: #ECECEC; --ink-2: #C6C6C6; --muted: #8F8F8F; --rule: #313131; color-scheme: dark; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+body { margin: 0; background: var(--night); color: var(--ink); font: 400 var(--t-body)/1.5 var(--sans); overflow-x: clip; }
+h1, h2, h3, h4, h5, p, figure { margin: 0; }
+img { display: block; max-width: none; }
+button, select, input { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; border-radius: 4px; }
+
+/* ---------- the stage ---------- */
+#track { position: relative; }
+#pin { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; background: var(--night); }
+.sc { position: absolute; inset: 0; visibility: hidden; }
+.card { position: absolute; inset: 0; overflow: hidden; will-change: transform; transform-origin: 50% 50%; }
+.media { position: absolute; inset: 0; will-change: transform; }
+.media img, .hi img { width: 100%; height: 100%; object-fit: cover; }
+.hi { position: absolute; inset: 0; will-change: transform, opacity; transform-origin: 50% 46%; }
+.shade { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(180deg, rgba(0, 0, 0, .3) 0%, rgba(0, 0, 0, 0) 26%, rgba(0, 0, 0, 0) 52%, rgba(0, 0, 0, .5) 100%); }
+.haze { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 46%, rgba(250, 248, 240, .96), rgba(236, 238, 232, .82) 60%, rgba(220, 226, 224, .7)); opacity: 0; pointer-events: none; }
+.dim { position: absolute; inset: 0; background: #000000; opacity: 0; pointer-events: none; }
+.fieldbg { position: absolute; inset: 0; background: var(--field); transition: background-color .25s; }
+.ln-mask, .line-mask { overflow: visible !important; clip-path: inset(-.32em -.12em -.24em -.12em); }
+
+/* top bar: logo top centre (placeholder wordmark until the brand work), the frame on the left, the ask on the right */
+.bar { position: fixed; z-index: 30; top: 0; left: 0; right: 0; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
+  padding: calc(env(safe-area-inset-top, 0px) + 14px) max(18px, env(safe-area-inset-right, 0px)) 0 max(18px, env(safe-area-inset-left, 0px));
+  color: var(--bar-ink, #FFFFFF); pointer-events: none; transition: color .3s; }
+.bar > * { pointer-events: auto; transition: color .2s; }
+.bar-frame { font: 500 var(--t-cap)/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.bar-mark { font: 640 23px/1 var(--sans); letter-spacing: -.055em; text-decoration: none; color: inherit; }
+.bar-ask { justify-self: end; font: 500 13px/1 var(--sans); padding: 10px 15px; border-radius: 999px; border: 1px solid currentColor; text-decoration: none; color: inherit; background: transparent; cursor: pointer; }
+@media (max-width: 640px) { .bar-frame { display: none; } .bar { grid-template-columns: 1fr auto; } .bar-mark { grid-column: 1; justify-self: start; } }
+
+/* 01 hero */
+/* the small line sits a tenth of the word's size under it, on the same ink edge (Joby's stat labels and Breakthrough's
+   headline + line pairs measure .1–.3 em; --hl is the small line's height, set in rebuild) */
+.h-word { position: absolute; left: max(22px, 4vw); bottom: calc(7vh + var(--hl, 27px) + .1em); color: var(--photo-ink); font: 560 var(--t-hero)/.86 var(--sans); letter-spacing: -.055em; }
+.h-line { position: absolute; left: max(22px, 4vw); bottom: 7vh; color: var(--photo-ink); font: 450 clamp(15px, 1.25vw, 20px)/1.35 var(--sans); max-width: 34ch; opacity: .95; }
+.h-cue { position: absolute; right: max(22px, 4vw); bottom: 7vh; color: var(--photo-ink); font: 500 var(--t-cap)/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; display: flex; gap: 10px; align-items: center; }
+.h-cue i { width: 1px; height: 34px; background: currentColor; transform-origin: 50% 0; animation: cue 1.667s cubic-bezier(.2, .21, 0, 1) infinite; }
+@keyframes cue { 0% { transform: scaleY(0); } 50% { transform: scaleY(1); } 100% { transform: scaleY(1); opacity: 0; } }
+@media (max-width: 640px) { .h-word { font-size: 23vw; } .h-line { bottom: 9vh; } .h-word { bottom: calc(9vh + var(--hl, 42px) + .1em); } .h-cue { display: none; } }
+
+/* 02 who we are, on the colour */
+#sc-k .card { color: var(--field-ink); }
+.typed { position: absolute; left: 50%; top: 50%; width: min(19ch, 88vw); transform: translate(-50%, -50%); font: 540 var(--t-say)/1.02 var(--sans); letter-spacing: -.045em; text-align: center; }
+.typed .tl { white-space: nowrap; }
+.typed .hi { color: #FFFFFF; }
+/* B: one white drawing at a time, drawn and undrawn by the scroll. "Yours": big, centred, behind the text on every screen.
+   "Mine": the same on desktop; on phones the drawing takes the top half and the text sits below it (Breakthrough's Approach). */
+.art2 { position: absolute; left: 50%; top: 50%; height: 84%; aspect-ratio: 400 / 560; transform: translate(-50%, -50%); pointer-events: none; }
+.art2 svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; color: #FFFFFF; }
+.art2 path { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; stroke-dasharray: 1 1; stroke-dashoffset: 1; }
+.art2 .thin { stroke-width: 1.4; }
+@media (max-width: 759px) {
+  #sc-k[data-layout="mine"] .art2 { top: calc(env(safe-area-inset-top, 0px) + 100px); height: 48%; transform: translateX(-50%); }
+  #sc-k[data-layout="mine"] [data-typed="who"] { top: 77%; }
+}
+/* E: the keywords on a ring that turns with the scroll (Breakthrough's ImageSwirl, made readable: an ellipse sized to the
+   screen, no random sizes, no drift on a timer, and one spot at the front where each word passes at full size in ink) */
+.ring { position: absolute; inset: 0; pointer-events: none; }
+.rw { position: absolute; left: 0; top: 0; font: 560 100px/1 var(--sans); letter-spacing: -.045em; white-space: nowrap; will-change: transform, opacity; }
+.ring-c { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); text-align: center; }
+.ring-c .k { display: block; font: 560 40px/1 var(--sans); letter-spacing: -.045em; white-space: nowrap; }
+.col-k { position: absolute; left: 0; right: 0; top: calc(env(safe-area-inset-top, 0px) + 74px); text-align: center; font: 500 var(--t-cap)/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; opacity: 0; }
+.col-w { position: absolute; left: 0; right: 0; top: 0; text-align: center; font: 560 var(--t-word)/1 var(--sans); letter-spacing: -.045em; white-space: nowrap; transform-origin: 50% 50%; will-change: transform; }
+.col-w small { display: block; font: 500 var(--t-cap)/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; opacity: .7; margin-bottom: .5rem; }
+@media (max-width: 640px) { .typed { font-size: var(--t-say-m); width: 90vw; } .typed .tl { white-space: normal; } }
+
+/* 03 podne: numbers on the photo */
+.num { position: absolute; left: max(22px, 4vw); bottom: 9vh; color: var(--photo-ink); width: min(64rem, 88%); }
+.num .n { display: block; font: 560 var(--t-num)/.88 var(--sans); letter-spacing: -.055em; white-space: nowrap; }
+.num .hair { display: block; height: 1px; background: currentColor; margin-top: 1.4rem; transform-origin: 0 50%; transform: scaleX(var(--p, 0)); }
+.num .lab { display: block; margin-top: .9rem; font: 450 clamp(15px, 1.2vw, 19px)/1.35 var(--sans); max-width: 32ch; }
+
+/* 04 šta radimo: the card that opens to the left (Joby /experience SectionSlider, from Frame by Frame) */
+#sc-w .card { background: var(--paper); color: var(--paper-ink); }
+.w-head { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); text-align: center; color: var(--field-ink); padding-inline: 6vw; }
+.w-head .k { font: 500 var(--t-cap)/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; opacity: .75; }
+.w-head h3 { margin: 1.4rem auto 0; max-width: 13ch; font: 540 var(--t-say)/1.02 var(--sans); letter-spacing: -.045em; text-wrap: balance; }
+.sp-panel { position: absolute; left: 0; top: 0; z-index: 3; overflow: hidden; transform-origin: 50% 50%; will-change: transform; visibility: hidden; }
+.sp-counter { position: absolute; inset: 0; transform-origin: 50% 50%; will-change: transform; }
+.sp-slide { position: absolute; inset: 0; }
+.sp-in { position: absolute; inset: 0; overflow: hidden; transform-origin: 50% 0; will-change: transform; }
+.sp-sc { position: absolute; inset: 0; transform-origin: 50% 0; }
+.sp-sc img { width: 100%; height: 100%; object-fit: cover; will-change: transform; }
+.sp-fig { position: absolute; z-index: 2; margin: 0; opacity: 0; }
+.sp-fig svg { width: 100%; height: auto; display: block; border: 1px solid rgba(18, 21, 18, .16); border-radius: 8px; background: #F8F7F2; }
+.sp-fig svg path { fill: none; stroke: #151715; stroke-width: 1.1; stroke-linecap: round; stroke-linejoin: round; }
+.sp-fig figcaption { margin-top: 8px; font: 500 var(--t-cap)/1.3 var(--mono); color: #6A6A62; }
+/* the drawings live a little: the pond ripples toward the weir and the outflow runs, the sun's rays turn and breathe, the blades turn */
+.sp-fig .fw { animation: fw var(--d, 3s) linear infinite; }
+@keyframes fw { to { transform: translateX(48px); } }
+.sp-fig .flow { stroke-dasharray: 5 5; animation: flow 1.2s linear infinite; }
+@keyframes flow { to { stroke-dashoffset: -10; } }
+.sp-fig .fs-turn, .sp-fig .fs-breathe, .sp-fig .fv-blades { transform-box: view-box; }
+.sp-fig .fs-turn { transform-origin: 186px 58px; animation: spin 40s linear infinite; }
+.sp-fig .fs-breathe { transform-origin: 186px 58px; animation: breathe 3.2s ease-in-out infinite alternate; }
+@keyframes breathe { from { transform: scale(.88); } to { transform: scale(1.08); } }
+.sp-fig .fv-blades { transform-origin: 123px 91px; animation: spin 6s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.sp-fig .fv-gust { animation: gust 2.4s ease-in-out infinite alternate; }
+@keyframes gust { from { opacity: .25; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .sp-fig * { animation: none !important; } }
+.sp-text { position: absolute; z-index: 2; opacity: 0; }
+.sp-text .n { display: block; font: 500 var(--t-cap)/1 var(--mono); letter-spacing: .08em; color: #77776E; }
+.sp-text h5 { margin-top: 12px; font: 580 clamp(1.8rem, 3vw, 3.6rem)/.98 var(--sans); letter-spacing: -.045em; }
+.sp-text p { margin-top: 14px; font: 400 clamp(14px, calc(8px + .55vw), 20px)/1.42 var(--sans); color: #45483F; max-width: 32ch; }
+.sp-text .tri { margin-top: 16px; font: 500 var(--t-cap)/1.4 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: #121512; }
+.no-tri .sp-text .tri { display: none; }
+@media (max-width: 760px) { .sp-text h5 { font-size: 1.6rem; margin-top: 8px; } .sp-text p { margin-top: 8px; font-size: 14px; } .sp-text .tri { margin-top: 8px; } .sp-fig figcaption { font-size: 10px; } }
+
+/* 05 balans: typed lines in the sky */
+.b-typed { position: absolute; left: max(22px, 4vw); top: 22vh; width: min(17ch, 88%); color: var(--photo-ink); font: 540 var(--t-say)/1.02 var(--sans); letter-spacing: -.045em; }
+.b-typed .tl { white-space: nowrap; }
+@media (max-width: 640px) { .b-typed { font-size: var(--t-say-m); } .b-typed .tl { white-space: normal; } }
+
+/* 06 berza: the night rises over Balans (a colour flood), then the hourly price draws itself on the dark */
+#sc-x .card { color: #FFFFFF; }
+.x-night { position: absolute; inset: 0; background: var(--night); }
+.x-say { position: absolute; left: max(22px, 4vw); top: 17vh; width: min(15ch, calc(100% - 44px)); font: 540 var(--t-say)/1.02 var(--sans); letter-spacing: -.045em; }
+.x-read { position: absolute; right: max(22px, 4vw); top: 17vh; text-align: right; font-variant-numeric: tabular-nums; }
+.x-read b { display: block; font: 560 clamp(3rem, 7.4vw, 8.6rem)/.9 var(--sans); letter-spacing: -.05em; }
+.x-read span { display: block; margin-top: .8rem; font: 500 var(--t-cap)/1.3 var(--mono); letter-spacing: .08em; text-transform: uppercase; opacity: .7; }
+.x-chart { position: absolute; left: max(22px, 4vw); right: max(22px, 4vw); bottom: 10vh; height: 38vh; overflow: visible; }
+.x-chart svg { width: 100%; height: 100%; overflow: visible; display: block; }
+.x-chart .grid { stroke: rgba(255, 255, 255, .14); stroke-width: 1; }
+.x-chart .price { fill: none; stroke: #FFFFFF; stroke-width: 1.6; stroke-linejoin: round; stroke-dasharray: 1 1; stroke-dashoffset: 1; }
+.x-chart .fixed { fill: none; stroke: var(--field); stroke-width: 2.4; stroke-dasharray: 1 1; stroke-dashoffset: 1; }
+.x-dot { position: absolute; left: 0; top: 0; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: var(--field); box-shadow: 0 0 0 6px color-mix(in srgb, var(--field) 25%, transparent); }
+.x-hours { position: absolute; left: 0; right: 0; bottom: -1.8rem; display: flex; justify-content: space-between; font: 500 10.5px/1 var(--mono); letter-spacing: .06em; opacity: .5; }
+.x-fixlab { position: absolute; right: 0; font: 500 var(--t-cap)/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--field); opacity: 0; transform: translateY(-140%); }
+@media (max-width: 759px) { .x-say { top: calc(env(safe-area-inset-top, 0px) + 110px); font-size: var(--t-say-m); } .x-read { left: 18px; right: auto; top: auto; bottom: calc(10vh + 28vh + 3.4rem); text-align: left; } .x-read b { font-size: 15vw; } .x-chart { height: 28vh; left: 18px; right: 18px; } .x-hours span:nth-child(even) { display: none; } }
+
+/* 07 poreklo: Breakthrough's quote cascade over the partner's plant, with an origin card where theirs has a video card */
+#sc-q .card { color: #FFFFFF; background: #0E100E; }
+#sc-q .media { top: -6%; bottom: -6%; }
+.q-vid { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.q-vid:not([src]) { display: none; }
+#sc-q[data-clip="100415"] .q-shade { background: linear-gradient(90deg, rgba(0, 0, 0, .18) 15%, rgba(0, 0, 0, .66)); }
+.q-shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0, 0, 0, .08) 20%, rgba(0, 0, 0, .55)); }
+.q-col { position: absolute; inset: 0; will-change: transform; }
+.q-box { position: absolute; right: max(22px, 4vw); top: 18vh; width: min(40rem, calc(100% - 44px)); font: 520 clamp(1.4rem, 2.2vw, 2.4rem)/1.12 var(--sans); letter-spacing: -.028em; }
+.q-box .hl { color: var(--field); }
+/* desktop: the quote and the name sit on the right edge; the closing mark hangs past it so the edge stays straight
+   (the name's top is set in buildQuote, just under the last line). Phones keep the left-aligned layout. */
+.q-box { text-align: right; }
+.q-box .qe { display: inline-block; width: 0; white-space: nowrap; }
+.q-who { position: absolute; right: max(22px, 4vw); text-align: right; top: 60vh; font: 500 15px/1.3 var(--sans); opacity: 0; }
+.q-who span { display: block; color: var(--field); font-weight: 400; }
+.q-card { position: absolute; right: max(22px, 4vw); bottom: 9vh; width: clamp(170px, 20vw, 300px); padding: 14px 16px 16px; border-radius: 6px; background: rgba(12, 14, 12, .72); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); box-shadow: 0 10px 40px rgba(0, 0, 0, .35); opacity: 0; }
+.q-card svg { display: block; width: 100%; height: auto; }
+.q-card svg path { fill: none; stroke: rgba(255, 255, 255, .7); stroke-width: 1.2; vector-effect: non-scaling-stroke; }
+.q-card svg circle { fill: var(--field); }
+.q-card p { margin-top: 10px; font: 500 10.5px/1.45 var(--mono); letter-spacing: .05em; text-transform: uppercase; }
+.q-card p b { display: block; font-weight: 500; color: var(--field); }
+@media (max-width: 759px) { .q-box { left: 18px; right: 18px; width: auto; top: calc(env(safe-area-inset-top, 0px) + 110px); font-size: clamp(19px, 5.4vw, 23px); } .q-who { left: 18px; right: auto; text-align: left; top: auto !important; bottom: 9vh; } .q-box { text-align: left; } .q-card { width: 46vw; right: 18px; bottom: 7vh; } }
+
+/* 08 za kupce: one sentence fills from faint to ink, then Joby's conveyor (Experience Highlights, from Frame by Frame) */
+#sc-u .card { background: var(--paper); color: var(--paper-ink); }
+.u-kick { position: absolute; left: max(22px, 4vw); top: 22vh; font: 500 var(--t-cap)/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; opacity: .6; }
+.fill { position: absolute; left: max(22px, 21vw); top: 22vh; width: min(20ch, calc(100% - 44px)); font: 560 clamp(2.1rem, 4.4vw, 5.4rem)/1.04 var(--sans); letter-spacing: -.045em; will-change: transform, opacity; }
+.fill .fw { opacity: .16; }
+.cv-slide { position: absolute; inset: 0; pointer-events: none; }
+.cv-img { position: absolute; left: 0; top: 0; overflow: hidden; transform-origin: 0 0; will-change: transform; }
+.cv-img img { width: 100%; height: 100%; object-fit: cover; transform-origin: 50% 55%; will-change: transform; }
+.cv-text { position: absolute; font: 450 clamp(15px, calc(8px + .55vw), 21px)/1.35 var(--sans); color: #45483F; opacity: 0; }
+.cv-text .n { display: block; font: 500 var(--t-cap)/1 var(--mono); letter-spacing: .08em; color: #77776E; }
+.cv-text h5 { margin: 12px 0 0; font: 580 clamp(2rem, 3.1vw, 4rem)/.96 var(--sans); letter-spacing: -.045em; color: var(--paper-ink); }
+.cv-text p { margin-top: 12px; max-width: 24ch; }
+.cv-text u { display: inline-block; margin-top: 14px; text-decoration-thickness: 1px; text-underline-offset: 4px; font-size: .85em; color: var(--paper-ink); }
+@media (max-width: 759px) { .u-kick { top: calc(env(safe-area-inset-top, 0px) + 80px); } .fill { left: 18px; top: calc(env(safe-area-inset-top, 0px) + 112px); font-size: var(--t-say-m); } .cv-text h5 { font-size: 1.7rem; margin-top: 6px; } .cv-text p { margin-top: 6px; font-size: 14px; } .cv-text u { margin-top: 6px; } }
+
+/* 09 kontakt: a photo opens between two words (Joby /company), then the form over it */
+#sc-z .card { background: var(--paper); color: var(--paper-ink); }
+.z-w { position: absolute; left: 0; top: 0; font: 560 clamp(2.4rem, 6.2vw, 7.6rem)/1 var(--sans); letter-spacing: -.05em; white-space: nowrap; will-change: transform; }
+.z-ph { position: absolute; inset: 0; overflow: hidden; will-change: clip-path; }
+.z-ph img { width: 100%; height: 100%; object-fit: cover; will-change: transform; }
+.z-ph::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0, 0, 0, .45), rgba(0, 0, 0, .15) 55%, rgba(0, 0, 0, .45)); }
+.z-head { position: absolute; left: max(22px, 4vw); top: 17vh; width: min(13ch, 46vw); color: #FFFFFF; font: 540 var(--t-say)/1.02 var(--sans); letter-spacing: -.045em; }
+.z-sub { position: absolute; left: max(22px, 4vw); bottom: 10vh; width: min(30ch, 40vw); color: #FFFFFF; font: 450 clamp(15px, 1.2vw, 19px)/1.4 var(--sans); opacity: 0; }
+.z-form { position: absolute; right: max(22px, 4vw); top: 50%; transform: translateY(-46%); width: min(27rem, 42vw); max-height: calc(100% - 150px); overflow-y: auto; overscroll-behavior: contain; padding: 26px 26px 24px; border-radius: 14px; color: #FFFFFF;
+  background: rgba(10, 12, 10, .6); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); opacity: 0; visibility: hidden; }
+.z-form form { display: grid; gap: 14px; }
+.z-form label { display: grid; gap: 6px; font: 500 10.5px/1.2 var(--mono); letter-spacing: .07em; text-transform: uppercase; color: rgba(255, 255, 255, .72); }
+.z-form input, .z-form select, .z-form textarea { width: 100%; min-width: 0; border: 0; border-bottom: 1px solid rgba(255, 255, 255, .38); background: transparent; color: #FFFFFF; padding: 7px 0 8px; font: 450 16px/1.3 var(--sans); letter-spacing: 0; text-transform: none; border-radius: 0; }
+.z-form select option { color: #111111; }
+.z-form textarea { resize: vertical; min-height: 2.6em; }
+.z-form input:focus, .z-form select:focus, .z-form textarea:focus { outline: none; border-bottom-color: var(--field); }
+.z-form input::placeholder, .z-form textarea::placeholder { color: rgba(255, 255, 255, .38); }
+.z-form [aria-invalid="true"] { border-bottom-color: #FF9A6B; }
+.z-two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+.z-send { margin-top: 6px; justify-self: start; border: 0; border-radius: 999px; padding: 13px 22px; background: var(--field); color: var(--field-ink); font: 560 15px/1 var(--sans); cursor: pointer; }
+.z-msg { font: 450 13px/1.4 var(--sans); color: #FFC9AE; }
+.z-msg:empty { display: none; }
+.z-done { display: grid; justify-items: start; gap: 14px; }
+.z-done[hidden] { display: none; }
+.z-plug { width: 100%; height: auto; overflow: visible; }
+.z-plug path, .z-plug rect, .z-plug circle { fill: none; stroke: #FFFFFF; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.z-plug .led { fill: rgba(255, 255, 255, .2); stroke: none; transition: fill .2s; }
+.z-plug .led.on { fill: var(--field); }
+.z-plug .glow { stroke: var(--field); opacity: 0; }
+.z-done h4 { font: 540 clamp(1.8rem, 2.6vw, 2.8rem)/1 var(--sans); letter-spacing: -.045em; }
+.z-done p { font: 450 15px/1.45 var(--sans); color: rgba(255, 255, 255, .8); max-width: 30ch; }
+.z-again { border: 1px solid rgba(255, 255, 255, .5); background: transparent; color: #FFFFFF; border-radius: 999px; padding: 9px 15px; font: 500 13px/1 var(--sans); cursor: pointer; }
+@media (max-width: 759px) {
+  .z-head { top: calc(env(safe-area-inset-top, 0px) + 78px); width: auto; right: 18px; left: 18px; font-size: var(--t-say-m); }
+  .z-sub { display: none; }
+  .z-form { left: 12px; right: 12px; width: auto; top: auto; bottom: 76px; transform: none; max-height: calc(100% - 260px); padding: 18px; }
+  .z-form form { gap: 10px; }
+  .z-two { grid-template-columns: 1fr; gap: 10px; }
+}
+
+/* ---------- the bench: controls for this round, not part of the design ---------- */
+.bench { position: fixed; z-index: 40; right: calc(env(safe-area-inset-right, 0px) + 14px); bottom: calc(env(safe-area-inset-bottom, 0px) + 14px); width: 330px; max-height: calc(100svh - 90px);
+  display: flex; flex-direction: column; background: color-mix(in srgb, var(--surface) 94%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  color: var(--ink); border: 1px solid var(--rule); border-radius: 14px; box-shadow: 0 10px 40px rgba(0, 0, 0, .22); font-size: 13px; }
+.bench-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 11px 14px; border: 0; background: transparent; cursor: pointer; width: 100%; text-align: left; font: 600 13px/1 var(--sans); }
+.bench-h span { font: 500 10.5px/1 var(--mono); color: var(--muted); letter-spacing: .03em; }
+.bench-b { overflow-y: auto; padding: 0 14px 12px; display: grid; gap: 14px; border-top: 1px solid var(--rule); padding-top: 12px; overscroll-behavior: contain; }
+.bench[data-open="false"] .bench-b { display: none; }
+.bench h4 { font: 500 10px/1.2 var(--mono); text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin-bottom: 7px; }
+.seg { display: flex; flex-wrap: wrap; gap: 3px; border: 1px solid var(--rule); border-radius: 9px; padding: 3px; background: var(--bg); }
+.seg button { flex: 1; border: 0; background: transparent; border-radius: 6px; padding: 7px 8px; cursor: pointer; font-size: 12.5px; white-space: nowrap; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.jumps button { flex: 1 0 auto; padding: 6px 4px; font: 500 11px/1 var(--mono); }
+.pick { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 4px; align-items: center; }
+.pick select { width: 100%; min-width: 0; padding: 7px 8px; border-radius: 7px; border: 1px solid var(--rule); background: var(--bg); font-size: 12.5px; }
+.pick button, .mini { border: 1px solid var(--rule); background: var(--bg); border-radius: 7px; padding: 6px 9px; cursor: pointer; font-size: 12px; }
+.pick + h4 { margin-top: 10px; }
+.presets { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 4px; }
+.presets button { aspect-ratio: 1; border-radius: 6px; border: 0; background: var(--c); cursor: pointer; padding: 0; box-shadow: inset 0 0 0 1px rgba(127, 127, 127, .3); }
+.presets button[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--ink); }
+.sl { display: grid; grid-template-columns: 4.6rem minmax(0, 1fr) 2.8rem; gap: 8px; align-items: center; margin-top: 7px; font: 500 10.5px/1 var(--mono); color: var(--ink-2); }
+.sl input { width: 100%; accent-color: var(--ink); }
+.sl b { font-weight: 500; text-align: right; }
+.hexrow { display: grid; grid-template-columns: 4.6rem minmax(0, 1fr) auto; gap: 8px; align-items: center; margin-top: 9px; font: 500 10.5px/1 var(--mono); color: var(--ink-2); }
+.hexrow input { width: 100%; min-width: 0; padding: 7px 8px; border-radius: 7px; border: 1px solid var(--rule); background: var(--bg); font: 500 12px/1 var(--mono); text-transform: uppercase; }
+.hexrow input[aria-invalid="true"] { border-color: var(--warn); }
+.hexmsg { font-size: 11.5px; line-height: 1.4; color: var(--ink-2); margin-top: 4px; }
+.hexmsg:empty { display: none; }
+.gout { display: flex; align-items: center; gap: 8px; margin-top: 9px; font: 500 10.5px/1.35 var(--mono); color: var(--ink-2); }
+.gout i { width: 26px; height: 26px; border-radius: 6px; background: var(--field); flex: none; box-shadow: inset 0 0 0 1px rgba(127, 127, 127, .3); }
+.keep-row { display: flex; gap: 6px; align-items: center; margin-top: 9px; flex-wrap: wrap; }
+.kept { display: flex; gap: 4px; flex-wrap: wrap; }
+.kept button { width: 24px; height: 24px; border-radius: 5px; border: 0; background: var(--c); cursor: pointer; box-shadow: inset 0 0 0 1px rgba(127, 127, 127, .3); }
+.bench-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; font: 500 10.5px/1.3 var(--mono); color: var(--muted); }
+.bench-foot .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 6px; background: var(--rule); vertical-align: 1px; }
+.bench-foot [data-s="ok"] .dot { background: var(--ink); }
+.hint { font-size: 12px; line-height: 1.45; color: var(--ink-2); }
+.bench-foot .v1 { margin-left: auto; color: var(--ink-2); text-decoration: underline; text-underline-offset: 2px; }
+/* on wide screens the open bench docks as a column and the stage gives it room, so it never covers the design */
+html.docked #track { margin-right: 344px; }
+html.docked .bar { right: 344px; }
+html.docked .bench { top: 0; bottom: 0; right: 0; width: 344px; max-height: none; border-radius: 0; border-width: 0 0 0 1px; box-shadow: none; background: var(--surface);
+  padding-top: env(safe-area-inset-top, 0px); padding-right: env(safe-area-inset-right, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+@media (max-width: 640px) {
+  .bench { left: calc(env(safe-area-inset-left, 0px) + 10px); right: calc(env(safe-area-inset-right, 0px) + 10px); bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); width: auto; max-height: 62svh; }
+}
+@media (prefers-reduced-motion: reduce) { .h-cue i { animation: none; } }
+</style>
+</head>
+<body>
+
+<header class="bar" id="bar">
+  <span class="bar-frame" id="bar-frame">01 · Hero</span>
+  <a class="bar-mark" href="#top" id="bar-mark" aria-label="EETS, back to the top">eets</a>
+  <button type="button" class="bar-ask" id="bar-ask">Zatražite ponudu</button>
+</header>
+
+<main id="track"><div id="pin" aria-label="EETS home page, frames 1 to 5, version 2">
+
+  <!-- 01 hero: one scroll film from high up, wind → sun → water (stock stills stand in for the Higgsfield flight) -->
+  <section class="sc" id="sc-h" style="z-index:50">
+    <div class="card" data-card>
+      <div class="media" data-media>
+        <div class="hi"><img src="img/wind.webp" alt="Wind turbines on a green ridge, seen from above" fetchpriority="high"></div>
+        <div class="hi"><img src="img/sun.webp" alt="Rows of solar panels on a green plain"></div>
+        <div class="hi"><img src="img/water.webp" alt="A dam in the mountains at sunrise"></div>
+        <div class="haze" data-haze></div>
+        <div class="shade"></div>
+      </div>
+      <h1 class="h-word" data-hw="0">Vetar.</h1>
+      <h2 class="h-word" data-hw="1" aria-hidden="true">Sunce.</h2>
+      <h2 class="h-word" data-hw="2" aria-hidden="true">Voda.</h2>
+      <p class="h-line">Struja iz vetra, sunca i vode, od izvora do vas.</p>
+      <p class="h-cue"><i></i>Skrolujte</p>
+    </div>
+  </section>
+
+  <!-- 02 who we are: Breakthrough's frame after its hero, on our colour -->
+  <section class="sc" id="sc-k" style="z-index:10">
+    <div class="card" data-card>
+      <div class="fieldbg"></div>
+      <!-- B: three portrait drawings (400 × 560, the shape of Breakthrough's phone artboard), shown one at a time -->
+      <div class="art2" data-art aria-hidden="true">
+        <svg viewBox="0 0 400 560" data-draw="wind">
+          <path d="M0 522C80 500 150 508 200 520S330 540 400 510"/>
+          <path d="M192 521L196 196H204L208 521"/>
+          <path d="M186 178H224V196H186Z"/>
+          <path d="M207 187A7 7 0 1 1 193 187A7 7 0 1 1 207 187"/>
+          <path d="M205 186L201 36L195 186"/>
+          <path d="M202.5 191.3L70 262L198.5 184.4"/>
+          <path d="M197.5 191.3L330 262L201.5 184.4"/>
+          <path class="thin" d="M317 506L319 334H321L323 506M313 325H329V334H313Z"/>
+          <path class="thin" d="M321 329L320 262M321 329L262 362M321 329L380 362"/>
+          <path class="thin" d="M36 118C66 106 96 106 128 118M58 146C82 136 108 136 134 146M262 92C286 82 312 82 340 92"/>
+        </svg>
+        <svg viewBox="0 0 400 560" data-draw="sun">
+          <path d="M0 500H400"/>
+          <path d="M336 140A46 46 0 1 1 244 140A46 46 0 1 1 336 140"/>
+          <path d="M290 72V54M290 226V208M358 140H376M204 140H222M338 92L351 79M229 201L242 188M338 188L351 201M229 79L242 92"/>
+          <path class="thin" d="M60 330L200 286L290 316L150 360Z"/>
+          <path class="thin" d="M105 345L245 301M106.7 315.3L196.7 345.3M153.3 300.7L243.3 330.7"/>
+          <path d="M30 440L240 372L380 418L170 486Z"/>
+          <path d="M76.7 455.3L286.7 387.3M123.3 470.7L333.3 402.7"/>
+          <path d="M82.5 423L222.5 469M135 406L275 452M187.5 389L327.5 435"/>
+          <path d="M110 466V500M250 446V500M340 431V500"/>
+        </svg>
+        <svg viewBox="0 0 400 560" data-draw="water">
+          <path class="thin" d="M0 210L70 130L120 170L190 80L260 160L310 120L400 200"/>
+          <path class="thin" d="M74 238C94 232 114 232 134 238S174 244 194 238M216 238C236 232 256 232 276 238S316 244 336 238"/>
+          <path d="M60 250Q200 225 340 250M60 250L90 400M340 250L310 400M90 400Q200 385 310 400"/>
+          <path d="M180 240C178 300 176 350 172 404M200 238C200 300 200 350 200 402M220 240C222 300 224 350 228 404"/>
+          <path d="M150 405C140 450 100 480 60 560M250 405C270 450 320 490 360 560"/>
+          <path class="thin" d="M160 452C170 448 180 448 190 452M196 496C208 492 220 492 232 496M150 534C164 530 178 530 192 534"/>
+          <path d="M350 560L366 420L382 560M356 470H376M352 510H380M346 432H386M366 420V410"/>
+        </svg>
+      </div>
+      <div class="typed" data-typed="who"></div>
+      <div class="typed" data-typed="stmt"></div>
+      <p class="col-k" data-colk>Nudimo vam</p>
+      <div data-col></div>
+      <div class="ring" data-ring><div class="ring-c" data-ringc><span class="k">Nudimo vam</span></div></div>
+      <div class="dim" data-dim></div>
+    </div>
+  </section>
+
+  <!-- 03 podne: the river reaches the plain at noon; numbers change inside one held frame -->
+  <section class="sc" id="sc-p" style="z-index:40">
+    <div class="card" data-card>
+      <div class="media" data-media><img src="img/podne.webp" alt="A river winding through bright green fields, from above" loading="lazy"></div>
+      <div class="shade"></div>
+      <div class="num" data-num="0"><span class="n">60+ MW</span><i class="hair"></i><span class="lab">partnerskih elektrana iz obnovljivih izvora, u više država</span></div>
+      <div class="num" data-num="1"><span class="n">1–12</span><i class="hair"></i><span class="lab">godina traju naši ugovori o otkupu</span></div>
+      <div class="num" data-num="2"><span class="n">0–24h</span><i class="hair"></i><span class="lab">call centar, svakog dana u godini</span></div>
+    </div>
+  </section>
+
+  <!-- 04 šta radimo -->
+  <section class="sc" id="sc-w" style="z-index:20">
+    <div class="card" data-card>
+      <div class="fieldbg" data-wfield></div>
+      <div class="w-head" data-whead><p class="k">Šta radimo</p><h3 data-wtitle>Otkupljujemo. Prodajemo. Garantujemo.</h3></div>
+      <div class="sp-panel" data-panel><div class="sp-counter" data-counter>
+        <div class="sp-slide"><div class="sp-in"><div class="sp-sc"><img src="img/buy.webp" alt="A small hydro weir in a green stream" loading="lazy"></div></div></div>
+        <div class="sp-slide"><div class="sp-in"><div class="sp-sc"><img src="img/sell.webp" alt="A lit bridge over a river at night" loading="lazy"></div></div></div>
+        <div class="sp-slide"><div class="sp-in"><div class="sp-sc"><img src="img/guar.webp" alt="White wind turbines over a field" loading="lazy"></div></div></div>
+      </div></div>
+      <div class="sp-text"><span class="n">01 / 03</span><h5>Otkupljujemo</h5><p>Električnu energiju iz obnovljivih izvora, od investitora koji znaju potencijal zelene energije.</p><p class="tri">Sigurnost · Stabilnost · Profitabilnost</p></div>
+      <div class="sp-text"><span class="n">02 / 03</span><h5>Prodajemo</h5><p>Snabdevamo krajnje potrošače električnom energijom, po povoljnim cenama.</p><p class="tri">Kvalitet · Pouzdanost · Odgovornost</p></div>
+      <div class="sp-text"><span class="n">03 / 03</span><h5>Garantujemo</h5><p>Poreklo električne energije koju prodajemo, za svaki kilovat-sat.</p><p class="tri">Transparentnost · Integritet · Ekološka svest</p></div>
+      <figure class="sp-fig"><svg viewBox="0 0 240 240" aria-hidden="true"><defs><clipPath id="fw-pond"><rect x="22" y="110" width="74" height="48"/></clipPath></defs><path d="M16 176H224"/><g clip-path="url(#fw-pond)"><path class="fw" style="--d:3.2s" d="M-72 122c8-3 16-3 24 0s16 3 24 0 16-3 24 0 16 3 24 0 16-3 24 0 16 3 24 0 16-3 24 0 16 3 24 0"/><path class="fw" style="--d:2.6s" d="M-72 136c8-3 16-3 24 0s16 3 24 0 16-3 24 0 16 3 24 0 16-3 24 0 16 3 24 0 16-3 24 0 16 3 24 0"/><path class="fw" style="--d:3.8s" d="M-72 150c8-3 16-3 24 0s16 3 24 0 16-3 24 0 16 3 24 0 16-3 24 0 16 3 24 0 16-3 24 0 16 3 24 0"/></g><path d="M96 98h14l20 78H96z"/><path d="M103 98v78M96 120h20M96 142h26"/><path class="flow" d="M130 166c20 2 38 8 60 10"/><path d="M146 176v-24h28v24M144 152l16-10 16 10"/><path d="M200 176l-6-80h12l-6 80M188 106h24M190 118h20"/><path d="M174 150c10-18 18-36 26-46"/></svg><figcaption>Sl. 1 — Mala hidroelektrana</figcaption></figure>
+      <figure class="sp-fig"><svg viewBox="0 0 240 240" aria-hidden="true"><path d="M16 196H224"/><path d="M34 160l104-34 70 28-104 36z"/><path d="M60 151l70 28M86 143l70 28M112 134l70 28M57 168l104-34M80 176l104-34"/><path d="M70 186v10M178 158v38M120 172v24"/><path d="M202 58a16 16 0 1 1-32 0a16 16 0 1 1 32 0"/><g class="fs-turn"><g class="fs-breathe"><path d="M186 30v-8M186 94v-8M214 58h8M150 58h8M206 38l6-6M160 84l6-6M206 78l6 6M160 32l6 6"/></g></g></svg><figcaption>Sl. 2 — Solarna elektrana</figcaption></figure>
+      <figure class="sp-fig"><svg viewBox="0 0 240 240" aria-hidden="true"><path d="M16 200H224"/><path d="M30 200c20-14 44-20 70-20M150 200c18-10 40-14 64-14"/><path d="M117 200l3-104h6l3 104"/><path d="M112 86h22v10h-22z"/><g class="fv-blades"><path d="M121 87L114 20l6 2 4 65M120 94l-58 34 1-6 57-31M126 94l56 30-5 3-53-30"/></g><path d="M127 91a4 4 0 1 1-8 0a4 4 0 1 1 8 0"/><path class="fv-gust" d="M150 52c6 4 10 10 12 17M156 40c10 6 16 15 19 26"/></svg><figcaption>Sl. 3 — Vetrogenerator</figcaption></figure>
+    </div>
+  </section>
+
+  <!-- 05 balans: the grid in afternoon light, lines typed by the scroll -->
+  <section class="sc" id="sc-b" style="z-index:45">
+    <div class="card" data-card>
+      <div class="media" data-media><img src="img/balans.webp" alt="Power lines over a wheat field in golden light" loading="lazy"></div>
+      <div class="shade"></div>
+      <div class="b-typed" data-btyped="0"></div>
+      <div class="b-typed" data-btyped="1"></div>
+    </div>
+  </section>
+
+  <!-- 06 berza: evening; the night rises over Balans, then the day's hourly price draws itself, with our flat price under it -->
+  <section class="sc" id="sc-x" style="z-index:47">
+    <div class="card" data-card>
+      <div class="x-night" data-night></div>
+      <div data-xin>
+        <h3 class="x-say" data-xsay="0">Cena struje se menja svakog sata.</h3>
+        <h3 class="x-say" data-xsay="1" aria-hidden="true">Vaša ne mora.</h3>
+        <p class="x-read" aria-hidden="true"><b data-xprice>92 €</b><span data-xhour>00:00 · MWh, dan unapred</span></p>
+        <div class="x-chart" data-xchart>
+          <svg aria-hidden="true"><path class="grid" data-xgrid/><path class="fixed" data-xfixed/><path class="price" data-xline/></svg>
+          <i class="x-dot" data-xdot></i>
+          <span class="x-fixlab" data-xfixlab>Vaša cena, ista svakog sata</span>
+          <div class="x-hours"><span>00</span><span>03</span><span>06</span><span>09</span><span>12</span><span>15</span><span>18</span><span>21</span><span>24</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 07 poreklo: the partner's plant, a quote that cascades in, and the origin card -->
+  <section class="sc" id="sc-q" style="z-index:48">
+    <div class="card" data-card>
+      <div class="media" data-media><img src="img/poreklo.webp" alt="A hydropower plant on a green river under a mountain" loading="lazy"><video class="q-vid" data-qvid muted loop playsinline preload="none" aria-hidden="true"></video></div>
+      <div class="q-shade"></div>
+      <div class="q-col" data-qcol>
+        <div class="q-box" data-quote>„Svaki kilovat-sat koji prodamo ima ime i adresu: <span class="hl">reku, vetar ili sunce</span> iz kog je došao. To vam garantujemo, crno na belo.<span class="qe">“</span></div>
+        <div class="q-who" data-qwho>Ime Prezime<span>Direktor, EETS</span></div>
+        <div class="q-card" data-qcard>
+          <svg viewBox="0 0 240 120" aria-hidden="true"><path d="M6 96C40 84 62 98 92 80S140 40 176 46 220 28 236 18"/><path d="M6 108C52 104 96 112 140 98S206 80 236 82" style="opacity:.4"/><path d="M118 60l10-14 10 14z"/><circle cx="128" cy="68" r="4.5"/></svg>
+          <p><b>Garancija porekla</b>Mala hidroelektrana · partner 14<br>43.6° N · 21.4° E</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 08 za kupce: one sentence fills, then the conveyor carries fabrika → pekara → kuća -->
+  <section class="sc" id="sc-u" style="z-index:49">
+    <div class="card" data-card>
+      <p class="u-kick" data-ukick>Za kupce</p>
+      <p class="fill" data-fill>Struju koju otkupljujemo od reka, vetra i sunca dovodimo do fabrika, pekara i domova.</p>
+      <div class="cv-slide"><div class="cv-img"><img src="img/fabrika.webp" alt="A worker walking through a factory hall" loading="lazy"></div><div class="cv-text"><span class="n">01 / 03</span><h5>Fabrike</h5><p>Struja za proizvodnu liniju, po ceni dogovorenoj unapred.</p><u>Ponuda za firme</u></div></div>
+      <div class="cv-slide"><div class="cv-img"><img src="img/pekara.webp" alt="A baker taking bread out of a brick oven" loading="lazy"></div><div class="cv-text"><span class="n">02 / 03</span><h5>Pekare</h5><p>Za peć koja se pali u četiri ujutru, svakog dana.</p><u>Ponuda za male firme</u></div></div>
+      <div class="cv-slide"><div class="cv-img"><img src="img/kuca.webp" alt="A wooden house with lit windows at dusk" loading="lazy"></div><div class="cv-text"><span class="n">03 / 03</span><h5>Domovi</h5><p>Za kuću u kojoj se uveče pale svetla.</p><u>Ponuda za domaćinstva</u></div></div>
+    </div>
+  </section>
+
+  <!-- 09 kontakt: the photo opens between two words, then the form; sending it plugs the plug into the outlet -->
+  <section class="sc" id="sc-z" style="z-index:60">
+    <div class="card" data-card>
+      <span class="z-w" data-zw="0">Recite nam</span><span class="z-w" data-zw="1">gde da je dovedemo.</span>
+      <div class="z-ph" data-zph><img src="img/kontakt.webp" alt="People on a hill above a valley of lit towns at night" loading="lazy"></div>
+      <h2 class="z-head" data-zhead>Recite nam gde da je dovedemo.</h2>
+      <p class="z-sub" data-zsub>Struja iz vode, vetra i sunca, do vaše adrese. Javljamo se u roku od jednog radnog dana.</p>
+      <div class="z-form" data-zform data-lenis-prevent>
+        <form novalidate data-zf>
+          <label>Ime i prezime<input name="ime" autocomplete="name" required></label>
+          <div class="z-two"><label>Email<input name="email" type="email" autocomplete="email" required></label><label>Telefon<input name="tel" type="tel" autocomplete="tel"></label></div>
+          <label>Gde da je dovedemo?<input name="gde" placeholder="Mesto, adresa ili ime firme" required></label>
+          <label>Mesečna potrošnja<select name="kwh"><option>Domaćinstvo</option><option>Mala firma, do 5.000 kWh</option><option>Firma, 5.000 do 50.000 kWh</option><option>Industrija, preko 50.000 kWh</option></select></label>
+          <label>Poruka<textarea name="poruka" rows="2" placeholder="Opciono"></textarea></label>
+          <p class="z-msg" data-zmsg aria-live="polite"></p>
+          <button class="z-send" type="submit">Pošalji</button>
+        </form>
+        <div class="z-done" data-zdone hidden>
+          <svg class="z-plug" viewBox="0 0 360 120" aria-hidden="true">
+            <g data-plug><path d="M-260 64H-20C30 64 40 40 90 52S126 64 140 64"/><rect x="140" y="44" width="54" height="40" rx="9"/><path d="M194 56h22M194 72h22"/></g>
+            <g><path d="M262 4V124" style="opacity:.5"/><rect x="236" y="30" width="26" height="68" rx="5"/><path d="M236 56h8M236 72h8"/><circle class="glow" data-glow cx="249" cy="64" r="30"/><circle class="led" data-led cx="249" cy="40" r="3.5"/></g>
+          </svg>
+          <h4 data-zdoneh>Šaljemo…</h4>
+          <p data-zdonep>Utikač ide u utičnicu.</p>
+          <button type="button" class="z-again" data-zagain hidden>Pošaljite još jednu poruku</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</div></main>
+
+<aside class="bench" id="bench" data-open="true" aria-label="Bench: controls for this round">
+  <button type="button" class="bench-h" id="bench-t" aria-expanded="true">Bench · V2 <span id="bench-hud">screen 0.00</span></button>
+  <div class="bench-b">
+    <div><h4>Jump to</h4><div class="seg jumps" id="jumps"></div>
+      <p class="hint" style="margin-top:7px">Cuts in V2: the hero lifts off, Podne rises, Šta radimo's card opens, Balans lifts off into Berza, and Poreklo rises as Breakthrough's quote card while the graph moves up. The rest are plain scrolls, and Kontakt opens its photo between two words.</p></div>
+    <div><h4>07 · The picture under the quote</h4><div class="seg" id="clip-seg"></div><p class="hint" id="clip-hint" style="margin-top:7px"></p></div>
+    <div><h4>Frame 2, after the two lines</h4><div class="seg" id="var-seg"><button type="button" data-v="b" aria-pressed="false">B · Line art</button><button type="button" data-v="c" aria-pressed="false">C · Nothing</button><button type="button" data-v="e" aria-pressed="false">E · Ring</button></div><p class="hint" id="var-hint" style="margin-top:7px"></p>
+      <div id="art-box" style="margin-top:9px"><h4>Line art layout</h4><div class="seg" id="art-seg"><button type="button" data-a="yours" aria-pressed="false">Yours · big, behind</button><button type="button" data-a="mine" aria-pressed="false">Mine · split on phones</button></div><p class="hint" id="art-hint" style="margin-top:7px"></p></div></div>
+    <div>
+      <h4><label for="who">Who we are</label></h4>
+      <div class="pick"><button type="button" data-step="who:-1" aria-label="Previous line">‹</button><select id="who"></select><button type="button" data-step="who:1" aria-label="Next line">›</button></div>
+      <h4><label for="stmt">The statement</label></h4>
+      <div class="pick"><button type="button" data-step="stmt:-1" aria-label="Previous line">‹</button><select id="stmt"></select><button type="button" data-step="stmt:1" aria-label="Next line">›</button></div>
+    </div>
+    <div>
+      <h4>The green</h4>
+      <div class="presets" id="presets"></div>
+      <label class="sl" for="g-h">Hue<input type="range" id="g-h" min="95" max="185" step="1"><b id="g-hv"></b></label>
+      <label class="sl" for="g-l">Lightness<input type="range" id="g-l" min="30" max="94" step="1"><b id="g-lv"></b></label>
+      <label class="sl" for="g-c">Chroma<input type="range" id="g-c" min="30" max="100" step="1"><b id="g-cv"></b></label>
+      <div class="hexrow"><label for="g-hex">Your hex</label><input id="g-hex" type="text" maxlength="7" spellcheck="false" autocomplete="off" placeholder="#3FA34D"><button type="button" class="mini" id="g-hex-go">Use</button></div>
+      <p class="hexmsg" id="g-hexmsg" aria-live="polite"></p>
+      <p class="gout"><i></i><span id="g-out"></span></p>
+      <div class="keep-row"><button type="button" class="mini" id="g-keep">Keep this green</button><div class="kept" id="kept" aria-label="Greens you kept"></div></div>
+    </div>
+    <div class="bench-foot"><span id="save" data-s="local"><span class="dot"></span><span id="save-txt">Saved in this browser</span></span><a class="v1" href="https://claude.ai/artifact/TAiXCBfh95MX2PJVY8WzLA" target="_blank" rel="noopener">V1 ↗</a><button type="button" class="mini" id="smooth" aria-pressed="true">Smooth on</button></div>
+  </div>
+</aside>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/ScrollTrigger.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/SplitText.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/CustomEase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+  const map = (x, a, b) => clamp((x - a) / (b - a));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const ease = (x) => (x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+  const bell = (x) => Math.sin(Math.PI * clamp(x));
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const G = window.gsap;
+  if (!G || !window.SplitText || !window.Lenis) { document.body.insertAdjacentHTML('beforeend', '<p style="position:fixed;inset:auto 0 0 0;padding:16px;background:#fff;color:#000">The animation libraries did not load. Reload the page.</p>'); return; }
+  G.registerPlugin(ScrollTrigger, SplitText, CustomEase);
+  CustomEase.create('snappy', '0.2, 0.21, 0, 1');
+
+  /* ---------------- copy: placeholder lines to try in frame 2 ---------------- */
+  const WHO = [
+    'Mi smo firma koja trguje strujom sa stilom.',
+    'Mi smo mladi, ali mudri.',
+    'Otkupljujemo zelenu struju od onih koji je proizvode i prodajemo je onima kojima treba.',
+    'EETS otkupljuje struju iz vode, vetra i sunca i dovodi je do vas.',
+    'Mi smo most između proizvođača zelene energije i njenih kupaca.',
+    'EETS trguje električnom energijom iz obnovljivih izvora, u više država regiona.',
+    'Sa partnerima raspolažemo sa preko 60 MW iz obnovljivih izvora.',
+    'Mi smo snabdevač koji zna odakle dolazi svaki kilovat-sat.',
+    'Struju kupujemo od reka, vetra i sunca. Prodajemo je fabrikama, pekarama i domovima.',
+    'Mi smo trgovci strujom. Zelenom, proverenom, po fer ceni.',
+    'EETS spaja male proizvođače zelene energije sa velikim tržištem.',
+    'Brinemo da struja iz obnovljivih izvora stigne tamo gde je potrebna.',
+    'Mi preuzimamo rizik tržišta, da proizvođač i kupac ne bi morali.',
+    'EETS je tim stručnjaka iz energetike, posvećen čistoj struji.',
+    'Zelenu energiju pretvaramo u ugovor na koji možete da računate.',
+    'Od elektrane do utičnice: to je naš posao.',
+    'Mi smo regionalni trgovac zelenom strujom, iz Beograda.',
+    'Kupujemo kad vetar duva i sunce sija. Prodajemo kad vama treba.',
+    'Iza svakog našeg kilovat-sata stoji elektrana sa imenom i adresom.',
+    'EETS: zelena struja, od izvora do vas.',
+    'EETS je tim stručnjaka posvećen čistoj struji. Naša vizija je zelenija budućnost, i najbitnije…',
+  ];
+  const STMT = [
+    'Energija je napredak.',
+    'Čista energija je napredak.',
+    'Zelena struja je domaća struja.',
+    'Struja nema boju. Ali ima poreklo.',
+    'Budućnost se ne uključuje. Ona se proizvodi.',
+    'Svaki kilovat-sat ima mesto i datum rođenja.',
+    'Najčistiji kilovat-sat je onaj čije poreklo znate.',
+    'Sunce ne šalje račun.',
+    'Reke, vetar i sunce rade za nas. Mi radimo za vas.',
+    'Zelena energija nije trend. To je infrastruktura.',
+    'Energija iz prirode, cena bez iznenađenja.',
+    'Napredak je kad čista struja postane obična.',
+    'Ka svetu koji radi samo na zelenu energiju.',
+    'Naša energija za održiv život.',
+    'Na putu ka sigurnoj energetskoj budućnosti.',
+    'Čista struja je stabilna struja.',
+    'Prelazak na zelenu energiju počinje jednim ugovorom.',
+    'Zelenija i čistija budućnost za sve.',
+    'Energija koja se obnavlja. Cena koja se ne menja preko noći.',
+    'Kad vetar stane, mreža ne sme.',
+    'Mi trgujemo sa *stilom*',
+  ];
+  const KEYS = [['Sigurnost.', 'Otkupljujemo'], ['Stabilnost.'], ['Profitabilnost.'], ['Kvalitet.', 'Prodajemo'], ['Pouzdanost.'], ['Odgovornost.'], ['Transparentnost.', 'Garantujemo'], ['Integritet.'], ['Ekološku svest.']];
+  const BAL = ['Kad vetar stane, mreža ne sme.', 'Mi balansiramo, sat po sat.'];
+  const VHINT = { b: 'One white drawing at a time, wind → sun → water as in the hero, behind the who-we-are line: each one draws and undraws as the next one draws. All three are gone before the statement types on, so it has the colour to itself.', c: 'Two lines and nothing else; Podne rises sooner.', d: 'V1\'s column: the keywords from eets.rs ("Nudimo vam") climb the colour as giant words, Joby /experience style. Šta radimo drops its keyword lines so they don\'t repeat.', e: 'The keywords on a ring that the scroll turns, after Breakthrough\'s spinning gallery. Unlike theirs, every word stays whole on screen and passes the front at full size and in ink, with a short stop there. Šta radimo drops its keyword lines.' };
+  const AHINT = { yours: 'Your idea: the drawing big and centred, behind the text, on every screen.', mine: 'My idea: on phones the drawing takes the top half and the text sits below it, as in Breakthrough\'s Approach section. On desktop the two are the same.' };
+  const RING = KEYS.map(([w], i) => ({ w: w.replace(/\.$/, ''), job: KEYS[i - (i % 3)][1] }));
+
+  /* ---------------- OKLCH → sRGB (as in the identity workbook) ---------------- */
+  function lin(L, C, h) {
+    const a = C * Math.cos(h * Math.PI / 180), b = C * Math.sin(h * Math.PI / 180);
+    const l = (L + .3963377774 * a + .2158037573 * b) ** 3, m = (L - .1055613458 * a - .0638541728 * b) ** 3, s = (L - .0894841775 * a - 1.2914855480 * b) ** 3;
+    return [4.0767416621 * l - 3.3077115913 * m + .2309699292 * s, -1.2684380046 * l + 2.6097574011 * m - .3413193965 * s, -.0041960863 * l - .7034186147 * m + 1.7076147010 * s];
+  }
+  const inGamut = (rgb) => rgb.every((v) => v >= -1e-4 && v <= 1 + 1e-4);
+  function maxC(L, h) { let lo = 0, hi = .4; for (let i = 0; i < 22; i++) { const mid = (lo + hi) / 2; if (inGamut(lin(L, mid, h))) lo = mid; else hi = mid; } return lo; }
+  const enc = (v) => { v = clamp(v); return Math.round(255 * (v <= .0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - .055)); };
+  const hex = (rgb) => '#' + rgb.map((v) => enc(v).toString(16).padStart(2, '0')).join('').toUpperCase();
+  const green = (g) => (g.grey ? { hex: '#9C9C9C', C: 0, L: .68 } : g.hex ? { hex: g.hex, C: g.C, L: g.l } : (() => { const C = maxC(g.l, g.h) * g.c; return { hex: hex(lin(g.l, C, g.h)), C, L: g.l }; })());
+  // a typed hex keeps its exact value; its OKLCH sets the sliders so it can be nudged from there
+  function parseHex(v) { let s = String(v).trim().replace(/^#/, ''); if (/^[0-9a-f]{3}$/i.test(s)) s = s.split('').map((c) => c + c).join(''); return /^[0-9a-f]{6}$/i.test(s) ? '#' + s.toUpperCase() : null; }
+  function hexToGreen(hx) {
+    const c = [1, 3, 5].map((i) => parseInt(hx.slice(i, i + 2), 16) / 255).map((v) => (v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4));
+    const l = Math.cbrt(.4122214708 * c[0] + .5363325363 * c[1] + .0514459929 * c[2]), m = Math.cbrt(.2119034982 * c[0] + .6806995451 * c[1] + .1073969566 * c[2]), s = Math.cbrt(.0883024619 * c[0] + .2817188376 * c[1] + .6299787005 * c[2]);
+    const L = .2104542553 * l + .7936177850 * m - .0040720468 * s, a = 1.9779984951 * l - 2.4285922050 * m + .4505937099 * s, b = .0259040371 * l + .7827717662 * m - .8086757660 * s;
+    const C = Math.hypot(a, b), h = (Math.atan2(b, a) * 180 / Math.PI + 360) % 360, mc = maxC(L, h) || 1e-6;
+    return { hex: hx, l: +L.toFixed(4), h: +h.toFixed(1), C: +C.toFixed(4), c: +Math.min(1, C / mc).toFixed(3) };
+  }
+  // presets: grey (no green yet), the five step-3 candidates from the workbook, and four more across the range
+  const PRESETS = [
+    { grey: true, name: 'Grey · no green yet' },
+    { h: 138, l: .80, c: 1, name: 'A · green 138°, light' }, { h: 112, l: .90, c: 1, name: 'B · lime 112°' }, { h: 148, l: .42, c: 1, name: 'C · deep green 148°' }, { h: 172, l: .72, c: 1, name: 'E · green-teal 172°' },
+    { h: 130, l: .70, c: 1, name: 'grass 130°' }, { h: 145, l: .58, c: .9, name: 'leaf 145°' }, { h: 124, l: .86, c: .85, name: 'spring 124°, soft' }, { h: 155, l: .50, c: .8, name: 'pine 155°, muted' },
+  ];
+
+  /* ---------------- state ---------------- */
+  const LKEY = 'eets-r4-2';
+  // starts from the user's own lines (the last who line and statement in the lists) and the green #A3CD30
+  const blank = () => ({ clip: '7838', variant: 'b', art: 'mine', who: WHO.length - 1, stmt: STMT.length - 1, green: { hex: '#A3CD30', l: .7907, h: 124, C: .1806, c: .92 }, kept: [], updatedAt: '' });
+  let S = blank();
+  try { const raw = store.get(LKEY); if (raw) S = Object.assign(blank(), JSON.parse(raw)); } catch (e) {}
+
+  /* ---------------- stage geometry + scenes ---------------- */
+  const pin = $('#pin'), track = $('#track');
+  let W = innerWidth, H = innerHeight, phone = W < 760, R = 160;
+  const SC = {};
+  const IDS = ['h', 'k', 'p', 'w', 'b', 'x', 'q', 'u', 'z'];
+  IDS.forEach((id) => { const el = $('#sc-' + id); SC[id] = { id, el, card: $('[data-card]', el), media: $('[data-media]', el), start: 0, len: 0 }; });
+  const NAMES = { h: '01 · Hero', k: '02 · Ko smo', p: '03 · Podne', w: '04 · Šta radimo', b: '05 · Balans', x: '06 · Berza', q: '07 · Poreklo', u: '08 · Za kupce', z: '09 · Kontakt' };
+  const KLEN = { b: 5.4, c: 3.8, d: 6.9, e: 8.8 };
+  function layout() {
+    if (S.variant === 'd') S.variant = 'e'; // the column is out (user, 2026-10-22); it stays in V1
+    const s = SC; s.h.start = 0; s.h.len = 5.0;
+    s.k.start = 4.4; s.k.len = KLEN[S.variant];
+    s.p.start = s.k.start + s.k.len - .8; s.p.len = 4.0;
+    s.w.start = s.p.start + 3.4; s.w.len = 6.2;
+    s.b.start = s.w.start + 5.4; s.b.len = 4.2;
+    s.x.start = s.b.start + 3.2; s.x.len = 4.7;   // Balans lifts off over 3.2 → 4.2 of its window
+    s.q.start = s.x.start + 3.4; s.q.len = 4.5;   // the quote card rises over 1.3 screens while Berza moves up
+    s.u.start = s.q.start + 3.7; s.u.len = 6.4;
+    s.z.start = s.u.start + 5.6; s.z.len = 3.4;
+    total = s.z.start + s.z.len;
+    unit = pin.offsetHeight || innerHeight;
+    track.style.height = Math.round((total + 1) * unit) + 'px';
+  }
+  let total = 1, unit = innerHeight;
+  const lenisRef = { l: null };
+  const scrollPos = () => (lenisRef.l ? lenisRef.l.scroll : window.scrollY);
+  const trackTop = () => 0;
+
+  /* ---------------- triggered type (Joby: masked lines on "snappy", one beat apart; exits short and moving) ---------------- */
+  const trig = [];
+  function masked(el, sc, a, b, big) {
+    const t = { el, sc, a, b, on: false, big, split: null };
+    t.make = () => { if (t.split) t.split.revert(); t.split = SplitText.create(el, { type: 'lines', mask: 'lines', linesClass: 'ln' }); G.set(t.split.lines, { yPercent: 105, autoAlpha: 0 }); t.on = false; };
+    trig.push(t); return t;
+  }
+  function playIn(t) { G.to(t.split.lines, { yPercent: 0, autoAlpha: 1, duration: t.big ? .833 : .667, ease: 'snappy', stagger: .083, overwrite: true }); if (t.onIn) t.onIn(); }
+  function playOut(t, up) { G.to(t.split.lines, { yPercent: up ? -70 : 70, autoAlpha: 0, duration: .333, ease: 'power2.in', stagger: .042, overwrite: true }); if (t.onOut) t.onOut(); }
+  const hw = $$('[data-hw]');
+  masked(hw[0], 'h', -99, 1.45, true); masked(hw[1], 'h', 1.85, 3.15, true); masked(hw[2], 'h', 3.55, 4.55, true);
+  const nums = $$('[data-num]');
+  const NW = [[.85, 1.75], [1.75, 2.6], [2.6, 3.6]];
+  nums.forEach((n, i) => { const t = masked($('.n', n), 'p', NW[i][0], NW[i][1], true); const lab = $('.lab', n), hair = $('.hair', n);
+    t.onIn = () => { G.fromTo(hair, { '--p': 0 }, { '--p': 1, duration: .833, ease: 'snappy', delay: .083, overwrite: true }); G.fromTo(lab, { y: '1.4rem', autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: .5, ease: 'snappy', delay: .25, overwrite: true }); };
+    t.onOut = () => { G.to(hair, { '--p': 0, duration: .333, ease: 'power2.in', overwrite: true }); G.to(lab, { autoAlpha: 0, y: '-.6rem', duration: .25, ease: 'power2.in', overwrite: true }); };
+    G.set(lab, { autoAlpha: 0 }); });
+  const wTitle = masked($('[data-wtitle]'), 'w', .3, 1.25, false);
+
+  /* ---------------- typed statements (Breakthrough: lines glide in while their words switch on; scrubbed) ---------------- */
+  function typed(box, text, exit) {
+    // *word* marks a word in white: split the plain text, then colour the word (a wrapper span confuses the line split)
+    const hi = new Set([...String(text).matchAll(/\*([^*]+)\*/g)].map((m) => m[1]));
+    box.innerHTML = `<div class="t">${esc(String(text).replace(/\*/g, ''))}</div>`;
+    const sp = SplitText.create(box.firstChild, { type: 'lines,words', linesClass: 'tl', wordsClass: 'tw' });
+    sp.words.forEach((w) => { if (hi.has(w.textContent.trim())) w.classList.add('hi'); });
+    const X = phone ? 30 : 100, tl = G.timeline({ paused: true }); let o = .25;
+    sp.lines.forEach((line) => { const w = $$('.tw', line); tl.set(line, { x: X }, 0).to(line, { x: 0, duration: .6, ease: 'circ.out' }, o); tl.set(w, { autoAlpha: 0 }, 0).to(w, { autoAlpha: 1, duration: .001, stagger: .6 * .8 / w.length }, o + .01); o += .6; });
+    const inDur = tl.duration();
+    if (exit === 'slide') { let q = inDur + .01; sp.lines.forEach((line) => { tl.to(line, { x: -X * .5, duration: .3, ease: 'circ.in' }, q).to(line, { autoAlpha: 0, duration: .001 }, q + .3); q += .2; }); }
+    else if (exit === 'untype') { let q = inDur + .31; const ws = $$('.tw', box); tl.set(box.firstChild, { y: 0 }, 0); ws.forEach((w) => { tl.to(w, { autoAlpha: 0, duration: .001 }, q); q += .1; }); tl.to(box.firstChild, { y: -20, ease: 'power2.in', duration: q - inDur }, inDur + .01); }
+    else tl.to({}, { duration: .001 }, inDur);
+    tl.progress(1).progress(0);
+    return { tl, bis: inDur / tl.duration() };
+  }
+  const prog = (t, w, bis) => (t < w[1] ? clamp((t - w[0]) / (w[1] - w[0]), 0, bis) : clamp((t - w[2]) / (w[3] - w[2]), bis, 1));
+  let TY = {};
+  function buildTyped() {
+    const d = S.variant === 'd' || S.variant === 'e', art = S.variant === 'b';
+    // B: the who line types one line per drawing (its lines start with wind, sun and water), holds while the last one
+    // undraws, then leaves; the statement types on only after that, so it has the colour to itself
+    TY.who = { ...typed($('[data-typed="who"]'), WHO[S.who], 'slide'), w: art ? [-.1, 2.4, 2.85, 3.1] : [.5, 1.4, 1.75, 2.0] };
+    TY.stmt = { ...typed($('[data-typed="stmt"]'), STMT[S.stmt], d ? 'untype' : 'none'), w: d ? [2.0, 2.7, 2.9, 3.25] : art ? [3.2, 3.9, 99, 100] : [2.0, 2.7, 99, 100] };
+    TY.b0 = { ...typed($('[data-btyped="0"]'), BAL[0], 'slide'), w: [1.0, 1.6, 2.0, 2.25] };
+    TY.b1 = { ...typed($('[data-btyped="1"]'), BAL[1], 'none'), w: [2.25, 2.85, 99, 100] };
+  }
+
+  /* ---------------- frame 2 D: the column of giant words (Joby /experience ScrollyText, tables from Frame by Frame) ---------------- */
+  const SCALE = [[-.5, .08], [-.28, .086], [-.182, .115], [-.058, .182], [.04, .257], [.164, .372], [.262, .473], [.387, .606], [.484, .707], [.609, .822], [.707, .897], [.831, .965], [.92, 1]];
+  const DROP = [[-.5, .25], [-.28, .202], [-.182, .147], [-.058, .094], [.04, .064], [.164, .037], [.262, .022], [.387, .011], [.484, .005], [.609, .002], [.707, .001], [.92, 0]];
+  const look = (T, x) => { if (x <= T[0][0]) return T[0][1]; for (let i = 1; i < T.length; i++) if (x <= T[i][0]) { const [a, va] = T[i - 1], [b, vb] = T[i]; return va + (vb - va) * (x - a) / (b - a); } return T[T.length - 1][1]; };
+  const col = $('[data-col]');
+  col.innerHTML = KEYS.map(([w, lab]) => `<div class="col-w">${lab ? `<small>${lab}</small>` : ''}<span>${w}</span></div>`).join('');
+  const colWords = $$('.col-w', col);
+  function fitCol() { const cw = W - (phone ? 30 : 80); colWords.forEach((w) => { w.style.fontSize = '100px'; const ww = $('span', w).getBoundingClientRect().width || 1; w.style.fontSize = Math.min(100 * cw / ww, H * (phone ? .09 : .2)).toFixed(1) + 'px'; }); }
+  const colTop = (k) => 1.02 + .3 * k + (k >= 3 ? .12 : 0) + (k >= 6 ? .12 : 0);
+
+  /* ---------------- frame 2 E: the keyword ring (Breakthrough ImageSwirl, measured 2026-10-22) ----------------
+     Theirs: 15 photos at random sizes and radii, drifting on a timer; on phones the radius is in screen widths, so at most
+     7 of 15 are ever fully on screen. Ours: 9 words on an ellipse sized to the screen (tall on phones), one size rule by
+     depth, no timer; the front is the bottom of the ring, where each word stops briefly at full size. */
+  const ringEl = $('[data-ring]'), ringC = $('[data-ringc]');
+  ringEl.insertAdjacentHTML('afterbegin', RING.map((r) => `<div class="rw">${esc(r.w)}</div>`).join(''));
+  const ringWords = $$('.rw', ringEl);
+  let ringFs = 60;
+  function fitRing() { let mw = 1; ringWords.forEach((w) => { w.style.fontSize = '100px'; mw = Math.max(mw, w.getBoundingClientRect().width); }); ringFs = Math.min(100 * (phone ? .82 : .46) * W / mw, H * (phone ? .075 : .12)); ringWords.forEach((w) => { w.style.fontSize = ringFs.toFixed(1) + 'px'; w._w = w.offsetWidth; w._h = w.offsetHeight; });
+    // "Nudimo vam" as large as fits between the words passing the sides (measured), a step below the front word
+    const lab = $('.k', ringC); lab.style.fontSize = '100px'; const lw = lab.getBoundingClientRect().width || 1;
+    lab.style.fontSize = Math.min(100 * W * (phone ? .4 : .32) / lw, ringFs * .8).toFixed(1) + 'px'; }
+  const notch = (x) => x - Math.sin(2 * Math.PI * x) / (2 * Math.PI); // flat at every whole step: a short stop at the front
+  const RT = { in: [3.1, 3.7], turn: [3.8, 7.4], out: [7.7, 8.2] };
+  function renderRing(t) {
+    const vin = ease(map(t, RT.in[0], RT.in[1])), vout = map(t, RT.out[0], RT.out[1]);
+    ringEl.style.visibility = vin > 0 && vout < 1 ? 'inherit' : 'hidden';
+    if (vin <= 0 || vout >= 1) return;
+    const n = ringWords.length, q = map(t, RT.turn[0], RT.turn[1]) * (n - 1), p = Math.floor(q) + notch(q - Math.floor(q));
+    const cx = W / 2, cy = H * (phone ? .5 : .52), rx = W * (phone ? .34 : .38), ry = H * (phone ? .37 : .35);
+    const k = (.3 + .7 * vin) * (1 + 1.6 * ease(vout)), fade = (1 - vout) * vin;
+    ringWords.forEach((el, i) => {
+      // angles are spread near the front, so the word arriving and the word leaving never share it
+      let dl = ((i - p) * 2 * Math.PI / n) % (2 * Math.PI); if (dl > Math.PI) dl -= 2 * Math.PI; if (dl < -Math.PI) dl += 2 * Math.PI;
+      const th = Math.PI / 2 + Math.sign(dl) * Math.PI * Math.pow(Math.abs(dl) / Math.PI, .6), d = (Math.sin(th) + 1) / 2;
+      const s = .32 + .68 * Math.pow(d, 6); let x = cx + Math.cos(th) * rx * k, y = cy + Math.sin(th) * ry * k;
+      const hw = el._w * s / 2 + 12; if (vout <= 0) x = clamp(x, hw, W - hw); // every word stays whole on screen (until the ring flies apart)
+      el.style.transform = `translate3d(${(x - el._w / 2).toFixed(2)}px, ${(y - el._h / 2).toFixed(2)}px, 0) scale(${s.toFixed(4)})`;
+      // the back of the ring fades out, so its words never pile up
+      el.style.opacity = ((.16 + .84 * Math.pow(d, 4)) * map(d, .04, .3) * fade).toFixed(3); el.style.zIndex = String(Math.round(d * 100));
+    });
+    ringC.style.opacity = (map(t, RT.in[0] + .3, RT.in[1]) * (1 - map(t, RT.out[0], RT.out[0] + .2))).toFixed(3);
+  }
+
+  /* ---------------- frame 4: Joby's opening card, from Frame by Frame ---------------- */
+  const wsc = SC.w, panel = $('[data-panel]'), counter = $('[data-counter]');
+  const slides = $$('.sp-slide').map((el) => ({ el, inn: $('.sp-in', el), sc: $('.sp-sc', el), img: $('img', el) }));
+  const texts = $$('.sp-text'), figs = $$('.sp-fig'), NS = slides.length;
+  let g = null;
+  function geo() {
+    const PW = phone ? W : W * .59, PH = phone ? H * .49 : H;
+    panel.style.width = PW + 'px'; panel.style.height = PH + 'px';
+    if (!phone) {
+      const tx = PW + W * .035, tw = Math.min(W * .27, W - tx - 32), fw = Math.min(W * .16, 280);
+      texts.forEach((t) => { t.style.left = tx + 'px'; t.style.top = 'auto'; t.style.bottom = H * .08 + 'px'; t.style.width = tw + 'px'; });
+      figs.forEach((f) => { f.style.width = fw + 'px'; f.style.left = (W - 40 - fw) + 'px'; f.style.top = '84px'; f.style.bottom = 'auto'; });
+    } else {
+      // the drawing sits beside the text, level with its number, and the text column stops short of it
+      const fw = Math.min(W * .3, 132);
+      texts.forEach((t) => { t.style.left = '18px'; t.style.top = (PH + 22) + 'px'; t.style.bottom = 'auto'; t.style.width = (W - 36 - fw - 16) + 'px'; });
+      figs.forEach((f) => { f.style.width = fw + 'px'; f.style.left = (W - 18 - fw) + 'px'; f.style.top = (PH + 22) + 'px'; f.style.bottom = 'auto'; });
+    }
+    g = { PW, PH };
+  }
+  const ease2 = (t) => (t < .5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
+  const WT = { rise: [1.0, 2.1], open: [2.1, 2.5], hold: .65, wipe: .5 };
+  function renderSplit(t) {
+    if (!g) geo();
+    const { PW, PH } = g;
+    const v = map(t, WT.rise[0], WT.rise[1]), a = v * v, bt = map(t, WT.open[0], WT.open[1]), b = 1 - Math.pow(1 - bt, 1.4);
+    $('[data-wfield]').style.opacity = (1 - map(a, .16, .81)).toFixed(3);
+    let sx, sy, tx, ty;
+    if (!phone) { sx = bt > 0 ? .7 + .3 * b : .5 + .2 * a; sy = .5 + .5 * a; tx = (W / 2 - PW / 2) * (1 - b); ty = (1 - v) * H; }
+    else { const cw = bt > 0 ? lerp(.92, 1, b) : .62 + .3 * a, ch = bt > 0 ? lerp(H * .86, PH, b) : H * (.36 + .5 * a); sx = cw; sy = ch / PH; tx = 0; ty = (bt > 0 ? lerp(H / 2, PH / 2, b) : H / 2 + (1 - v) * H) - PH / 2; }
+    panel.style.visibility = v > 0 ? 'inherit' : 'hidden';
+    panel.style.transform = `translate3d(${tx.toFixed(2)}px, ${ty.toFixed(2)}px, 0) scale(${sx.toFixed(4)}, ${sy.toFixed(4)})`;
+    const k = 1 + .25 * (1 - a); counter.style.transform = `scale(${(k / sx).toFixed(4)}, ${(k / sy).toFixed(4)})`;
+    const bp = Math.pow(map(b, .55, 1), 2), RR = phone ? 56 : 120, r0 = (RR * (1 - bp)).toFixed(1) + 'px';
+    panel.style.borderRadius = phone ? `${r0} ${r0} ${RR}px ${RR}px` : `${r0} ${RR}px ${RR}px ${r0}`;
+    const base = WT.open[1], per = WT.hold + WT.wipe;
+    slides.forEach(({ el, inn, sc, img }, i) => {
+      const ws = base + WT.hold + i * per, w = i < NS - 1 ? ease2(map(t, ws, ws + WT.wipe)) : 0;
+      inn.style.transform = `scaleY(${(1 - w).toFixed(4)})`; sc.style.transform = `scaleY(${(1 / Math.max(.001, 1 - w)).toFixed(4)})`;
+      const zp = map(t, i === 0 ? WT.open[0] : ws - per, ws + WT.wipe);
+      img.style.transform = `scale(${((1.8 - .8 * b) * (1.15 - .15 * zp)).toFixed(4)})`;
+      el.style.zIndex = String(NS - i); el.style.visibility = w >= 1 ? 'hidden' : 'inherit';
+    });
+    texts.forEach((tx2, i) => {
+      const st = i === 0 ? WT.open[0] + .22 : base + i * per - .08, ws = base + WT.hold + i * per;
+      const o = Math.min(map(t, st, st + .15), i < NS - 1 ? 1 - map(t, ws, ws + .1) : 1);
+      tx2.style.opacity = o.toFixed(3); tx2.style.transform = `translate3d(${((1 - map(t, st, st + .22)) * 27).toFixed(1)}px, 0, 0)`;
+      figs[i].style.opacity = o.toFixed(3);
+    });
+  }
+
+  /* ---------------- frame 6, berza: the day-ahead price, hour by hour (placeholder figures, €/MWh) ---------------- */
+  const PRICE = [92, 85, 80, 78, 79, 86, 105, 128, 121, 98, 72, 55, 41, 38, 46, 63, 90, 130, 158, 149, 131, 118, 104, 96], FIXED = 95;
+  const PY = (v) => 280 - (v - 30) / (170 - 30) * 260, PX = (i) => i * 1000 / 23;
+  const xLine = $('[data-xline]'), xFixed = $('[data-xfixed]'), xDot = $('[data-xdot]'), xChart = $('[data-xchart]'), xFixLab = $('[data-xfixlab]');
+  [xLine, xFixed].forEach((p) => p.setAttribute('pathLength', '1'));
+  // the chart is laid out in real pixels (a stretched viewBox breaks the dash); where the line has got to is tracked
+  // by length along it (the dash) and by hour (the cursor), so the dot sits on the tip
+  let segL = [], totL = 1, ccw = 1, cch = 1;
+  function chartGeo() {
+    ccw = xChart.clientWidth || 1; cch = xChart.clientHeight || 1;
+    const sx = ccw / 1000, sy = cch / 300, pts = PRICE.map((v, i) => [PX(i) * sx, PY(v) * sy]);
+    $('svg', xChart).setAttribute('viewBox', `0 0 ${ccw} ${cch}`);
+    $('[data-xgrid]').setAttribute('d', [300, 200, 100].map((y) => `M0 ${(y * sy).toFixed(1)}H${ccw}`).join(''));
+    xLine.setAttribute('d', pts.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(''));
+    xFixed.setAttribute('d', `M0 ${(PY(FIXED) * sy).toFixed(1)}H${ccw}`);
+    segL = pts.slice(1).map(([x, y], i) => Math.hypot(x - pts[i][0], y - pts[i][1])); totL = segL.reduce((a, b) => a + b, 0) || 1;
+  }
+  const xNight = $('[data-night]'), xIn = $('[data-xin]'), xPrice = $('[data-xprice]'), xHour = $('[data-xhour]');
+  const xsay = $$('[data-xsay]');
+  masked(xsay[0], 'x', .8, 2.55, false); masked(xsay[1], 'x', 2.6, 99, false);
+  function renderBerza(t) {
+    // the night is already there under Balans; its content comes up as Balans lifts away
+    xIn.style.opacity = map(t, .55, .85).toFixed(3);
+    const dl = map(t, .9, 2.5), hr = dl * 23, i = Math.min(22, Math.floor(hr)), fr = hr - i;
+    const cum = segL.slice(0, i).reduce((a, b) => a + b, 0) + segL[i] * fr;
+    xLine.style.strokeDashoffset = (1 - cum / totL).toFixed(4);
+    const v = lerp(PRICE[i], PRICE[i + 1], fr);
+    xDot.style.transform = `translate3d(${(PX(hr) / 1000 * ccw).toFixed(1)}px, ${(PY(v) / 300 * cch).toFixed(1)}px, 0)`;
+    xDot.style.opacity = dl > 0 ? '1' : '0';
+    xPrice.textContent = `${Math.round(v)} €`; xHour.textContent = `${String(Math.min(23, Math.round(hr))).padStart(2, '0')}:00 · MWh, dan unapred`;
+    const fx = map(t, 2.55, 3.0); xFixed.style.strokeDashoffset = (1 - fx).toFixed(4);
+    xFixLab.style.top = (PY(FIXED) / 300 * cch) + 'px'; xFixLab.style.opacity = map(t, 2.75, 3.0).toFixed(3);
+  }
+
+  /* ---------------- frame 7, poreklo: Breakthrough's cascade (lines 100 px in from the right, 1.5 − 0.2·i s, 0.3 apart) ---------------- */
+  const qBox = $('[data-quote]'), qCol = $('[data-qcol]'), qWho = $('[data-qwho]'), qCard = $('[data-qcard]');
+  let QT = null;
+  function buildQuote() {
+    if (QT && QT.sp) QT.sp.revert();
+    const sp = SplitText.create(qBox, { type: 'lines', linesClass: 'ql' }), tl = G.timeline({ paused: true }), X = phone ? 36 : 100; let o = 0;
+    sp.lines.forEach((l, c) => { tl.set(l, { x: X, autoAlpha: 0 }, 0).to(l, { x: 0, duration: Math.max(.6, 1.5 - c * .2), ease: 'circ.out' }, o).to(l, { autoAlpha: 1, duration: .001 }, o + .05); o += .3; });
+    tl.progress(1).progress(0); QT = { sp, tl };
+    if (!phone) qWho.style.top = (qBox.offsetTop + qBox.offsetHeight + Math.max(28, H * .045)) + 'px';
+  }
+  const fades = [{ el: qWho, sc: 'q', a: 2.0, b: 99 }, { el: qCard, sc: 'q', a: 2.2, b: 99 }].map((f) => ({ ...f, on: false }));
+  function playFade(f, on) { G.to(f.el, on ? { autoAlpha: 1, y: 0, duration: .667, ease: 'snappy', overwrite: true } : { autoAlpha: 0, y: '.6rem', duration: .25, ease: 'power2.in', overwrite: true }); }
+  fades.forEach((f) => G.set(f.el, { autoAlpha: 0, y: '1.9rem' }));
+
+  // the picture under the quote: a muted loop that plays on its own while Poreklo is on screen (Breakthrough's quote field);
+  // the still stays underneath as the poster and for reduced motion. 11 s loops cut from Mixkit 720p clips, the end faded into the start.
+  const CLIPS = {
+    still: ['Still', 'The photo only (S10·1), no motion.'],
+    7838: ['7838', 'Mixkit 7838, green wheat in the wind. Stand-in only: its licence is personal use, so it can\'t go on the live site.'],
+    100415: ['100415', 'Mixkit 100415, green hills under low cloud. Free licence. A darker shade behind the quote for reading.'],
+    2128: ['2128', 'Mixkit 2128, cool green fields on an overcast day. Free licence. Slow drone move.'],
+    50874: ['50874', 'Mixkit 50874, low across a green meadow to pines. Free licence. Slow forward glide.'],
+    21578: ['21578', 'Mixkit 21578, a wide plain under a big grey sky. Free licence. Static camera, moving clouds.'],
+  };
+  const qVid = $('[data-qvid]');
+  function setClip() {
+    $('#sc-q').dataset.clip = S.clip;
+    if (S.clip === 'still' || reduce) { qVid.pause(); qVid.removeAttribute('src'); qVid.removeAttribute('poster'); qVid.load(); return; }
+    const src = `vid/q-${S.clip}.mp4`;
+    if (qVid.getAttribute('src') !== src) { qVid.setAttribute('poster', `vid/q-${S.clip}.jpg`); qVid.setAttribute('src', src); }
+  }
+  function playClip(S_) {
+    if (!qVid.getAttribute('src')) return;
+    const on = S_ > SC.q.start - .3 && S_ < SC.q.start + SC.q.len;
+    if (on && qVid.paused) qVid.play().catch(() => {}); else if (!on && !qVid.paused) qVid.pause();
+  }
+
+  /* ---------------- frame 8, za kupce: the conveyor (Joby Experience Highlights, geometry from Frame by Frame) ---------------- */
+  const fillEl = $('[data-fill]'), uKick = $('[data-ukick]');
+  fillEl.innerHTML = fillEl.textContent.trim().split(/\s+/).map((w) => `<span class="fw">${esc(w)}</span>`).join(' ');
+  const fillWords = $$('.fw', fillEl);
+  const cvSlides = $$('#sc-u .cv-slide').map((s) => ({ s, box: $('.cv-img', s), img: $('.cv-img img', s), text: $('.cv-text', s) }));
+  const CN = cvSlides.length, C0 = 1.9; let cg = null;
+  const cubicIO = (x) => (x = clamp(x), x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
+  const lerpR = (a, b, t) => ({ x: lerp(a.x, b.x, t), y: lerp(a.y, b.y, t), s: lerp(a.s, b.s, t) });
+  function cvGeo() {
+    if (!phone) {
+      const m = Math.round(H * .0278), h = H - 2 * m, w = Math.min(W * .4535, h * 1.4), left = (W - w) / 2, top = m, gap = W * .0194, s = .19, tx = left + w + W * .018;
+      cg = { w, h, small: s, rMax: 80, hero: { x: left, y: top, s: 1 }, next: { x: left + w + gap, y: top + h - s * h, s }, prev: { x: left - gap - s * w, y: top, s },
+        nextIn: { x: left + w + gap, y: top + h, s: 0 }, prevOut: { x: left - gap, y: top, s: 0 }, entry: (e) => ({ x: W / 2 - e * w / 2, y: top + h - e * h, s: e }),
+        txt: { x: tx, y: H * .5, w: Math.max(200, Math.min(W - tx - 24, W * .21)), mid: true } };
+    } else {
+      const w = W * .76, h = Math.min(H * .49, w * 1.45), left = W * .197, top = H * .11, s = .6;
+      cg = { w, h, small: s, rMax: 32, hero: { x: left, y: top, s: 1 }, next: { x: left, y: H * .87, s }, prev: { x: left, y: top - s * h - H * .05, s },
+        nextIn: { x: left, y: H * 1.3, s }, prevOut: { x: left, y: -h * 1.2, s }, entry: (e) => { const s2 = .12 + .88 * e; return { x: W / 2 - s2 * w / 2, y: top + (1 - e) * H * .55, s: s2 }; },
+        txt: { x: left, y: top + h + 16, w: W - left - 16, mid: false } };
+    }
+    cvSlides.forEach(({ box, text }) => { box.style.width = cg.w + 'px'; box.style.height = cg.h + 'px'; text.style.left = cg.txt.x + 'px'; text.style.top = cg.txt.y + 'px'; text.style.width = cg.txt.w + 'px'; text.style.transform = cg.txt.mid ? 'translateY(-50%)' : 'none'; });
+  }
+  // where slide i is when the conveyor stands at f = position − i: −2 not yet in, −1 next, 0 current, 1 previous, 2 gone
+  function cvRect(f, i) {
+    if (f <= -2) return cg.nextIn; if (f >= 2) return cg.prevOut;
+    if (f < -1) return lerpR(cg.nextIn, cg.next, f + 2);
+    if (f < 0) return i === 0 ? cg.entry(f + 1) : lerpR(cg.next, cg.hero, f + 1);
+    if (f < 1) return lerpR(cg.hero, cg.prev, f);
+    return lerpR(cg.prev, cg.prevOut, f - 1);
+  }
+  const CT = { entry: .7, hold: .55, move: .65 };
+  function cvPos(S) {
+    if (S < CT.entry) return -1 + ease2(clamp(S / CT.entry));
+    const per = CT.hold + CT.move, u = S - CT.entry, k = Math.floor(u / per), r = u - k * per;
+    if (k >= CN - 1) return CN - 1;
+    return k + (r < CT.hold ? 0 : ease2((r - CT.hold) / CT.move));
+  }
+  // Joby's text has two clocks (measured 2026-10-22): the block fades with the scroll over ~80 px, then its lines play once on
+  // a timer: each slides up 1.4 rem and switches on, 0.083 s apart, 0.5 s on "snappy"; the number fades; the link follows 0.333 s later
+  let cvTx = [];
+  function buildCvText() {
+    cvTx.forEach((x) => x.sp && x.sp.revert());
+    cvTx = cvSlides.map(({ text }) => {
+      const sp = SplitText.create([$('h5', text), $('p', text)], { type: 'lines', linesClass: 'cvl' }), n = $('.n', text), u = $('u', text);
+      G.set(sp.lines, { y: '1.4rem', autoAlpha: 0 }); G.set(n, { opacity: 0 }); G.set(u, { y: '1.4rem', autoAlpha: 0 });
+      return { sp, n, u, played: false };
+    });
+  }
+  function playCvText(x) {
+    if (x.played) return; x.played = true;
+    G.to(x.sp.lines, { y: 0, autoAlpha: 1, duration: .5, ease: 'snappy', stagger: .083, overwrite: true });
+    G.to(x.n, { opacity: 1, duration: .5, ease: 'snappy' }); G.to(x.u, { y: 0, autoAlpha: 1, duration: .5, ease: 'snappy', delay: .333 });
+  }
+  // phones (Joby, measured at 390 × 844): no pin; the column moves 1:1 with the scroll. Each card's size follows where it is:
+  // 0.6× while its box is below 64% of the screen, full size by 21%, back to 0.6× by −15%, scaled from its bottom-left corner,
+  // so it rushes up as it swells and lingers as it shrinks. The text sits under the card.
+  const CP = 2.5;
+  function renderColumn(t) {
+    const w = W * .76, h = Math.min(H * .49, w * 1.405), left = W * .197, pitch = h + 150, tt = Math.min(t, 5.6);
+    const y0 = H - (tt - CP) * H;   // the first box's top; before CP the column waits below the screen
+    const lift_ = Math.max(0, tt - CP) * H;
+    fillEl.style.opacity = uKick.style.opacity = '1';
+    fillEl.style.transform = uKick.style.transform = `translate3d(0, ${(-lift_).toFixed(1)}px, 0)`;
+    cvSlides.forEach(({ s, box, img, text }, i) => {
+      const yb = y0 + i * pitch, g = ease2(map(yb, .64 * H, .21 * H)), o = ease2(map(yb, .18 * H, -.15 * H)), sc = (.6 + .4 * g) * (1 - .4 * o);
+      box.style.width = w + 'px'; box.style.height = h + 'px'; box.style.transformOrigin = '0 100%';
+      box.style.transform = `translate3d(${left.toFixed(1)}px, ${yb.toFixed(1)}px, 0) scale(${sc.toFixed(4)})`;
+      box.style.visibility = yb > H + 10 || yb + h + 160 < 0 ? 'hidden' : 'inherit';
+      box.style.borderRadius = (16 * (1 + (1 - g)) * (1 + o)).toFixed(1) + 'px';
+      img.style.transform = `scale(${(Math.pow(1 / sc, .5) * (1 + .1 * (1 - g))).toFixed(4)})`;
+      s.style.zIndex = String(5 + i);
+      text.style.left = left + 'px'; text.style.width = (W - left - 16) + 'px'; text.style.top = '0px';
+      text.style.transform = `translate3d(0, ${(yb + h + 10).toFixed(1)}px, 0)`; text.style.opacity = '1';
+      if (yb < .62 * H && cvTx[i]) playCvText(cvTx[i]);
+    });
+  }
+  function renderKupci(t) {
+    if (phone) { const n = fillWords.length, pos = map(t, .3, 1.6) * (n + 4); fillWords.forEach((w, i) => { w.style.opacity = (.16 + .84 * clamp((pos - i) / 4)).toFixed(3); }); renderColumn(t); return; }
+    if (!cg) cvGeo();
+    const n = fillWords.length, pos = map(t, .3, 1.6) * (n + 4);
+    fillWords.forEach((w, i) => { w.style.opacity = (.16 + .84 * clamp((pos - i) / 4)).toFixed(3); });
+    const S = Math.max(0, t - C0), P = cvPos(S), tg = map(S, CT.entry * .2, CT.entry * .7);
+    fillEl.style.opacity = uKick.style.opacity = (1 - tg).toFixed(3); fillEl.style.transform = `translate3d(0, ${(-tg * 30).toFixed(1)}px, 0)`;
+    cvSlides.forEach(({ s, box, img, text }, i) => {
+      const f = P - i, r = cvRect(f, i), sc = Math.max(r.s, .0005);
+      box.style.transform = `translate3d(${r.x.toFixed(2)}px, ${r.y.toFixed(2)}px, 0) scale(${sc.toFixed(4)})`;
+      box.style.visibility = r.s < .003 ? 'hidden' : 'inherit';
+      box.style.borderRadius = (16 + (cg.rMax - 16) * clamp((1 - r.s) / (1 - cg.small))).toFixed(1) + 'px';
+      // the photo: a window onto a full-size photo on the way in, shrinking with its frame on the way out
+      const k = f < -1 ? 1 : f < 0 ? (i === 0 ? .8 : 1) : .3;
+      img.style.transform = `scale(${Math.min(40, Math.pow(1 / sc, k) * (1 + .03 * (1 - r.s))).toFixed(4)})`;
+      s.style.zIndex = String(10 - Math.round(Math.abs(f) * 3));
+      text.style.opacity = Math.min(map(f, -.4, -.3), 1 - map(f, 0, .1)).toFixed(3);
+      if (f >= -.38 && cvTx[i]) playCvText(cvTx[i]);   // the lines play at 62% of the slide's arrival
+    });
+  }
+
+  /* ---------------- frame 9, kontakt: the photo opens between two words (Joby /company), then the form ---------------- */
+  const zw = $$('[data-zw]'), zph = $('[data-zph]'), zImg = $('img', zph), zSub = $('[data-zsub]'), zForm = $('[data-zform]');
+  let zg = null;
+  function zGeo() { zw.forEach((w) => { w.style.fontSize = phone ? '9.2vw' : ''; }); zg = { w0: zw[0].offsetWidth, w1: zw[1].offsetWidth, lh: zw[0].offsetHeight, pad: phone ? 10 : 18 }; }
+  masked($('[data-zhead]'), 'z', 2.0, 99, false);
+  fades.push({ el: zSub, sc: 'z', a: 2.3, b: 99, on: false }, { el: zForm, sc: 'z', a: 2.35, b: 99, on: false });
+  G.set([zSub, zForm], { autoAlpha: 0, y: '1.9rem' });
+  function renderKontakt(t) {
+    if (!zg) zGeo();
+    const a = ease(map(t, .9, 1.35)), b = ease(map(t, 1.35, 2.05)), { w0, w1, lh, pad } = zg;
+    let rx, ry, rw, rh;
+    if (!phone) {
+      const gap = W * .16 * a, x0 = W / 2 - (w0 + gap + w1 + 2 * pad) / 2, y0 = H / 2 - lh / 2;
+      zw[0].style.transform = `translate3d(${x0.toFixed(1)}px, ${y0.toFixed(1)}px, 0)`;
+      zw[1].style.transform = `translate3d(${(x0 + w0 + 2 * pad + gap).toFixed(1)}px, ${y0.toFixed(1)}px, 0)`;
+      rx = x0 + w0 + pad; ry = y0 + lh * .08; rw = gap; rh = lh * .9;
+    } else {
+      const gap = H * .22 * a, cy = H / 2;
+      zw[0].style.transform = `translate3d(${((W - w0) / 2).toFixed(1)}px, ${(cy - gap / 2 - pad - lh).toFixed(1)}px, 0)`;
+      zw[1].style.transform = `translate3d(${((W - w1) / 2).toFixed(1)}px, ${(cy + gap / 2 + pad).toFixed(1)}px, 0)`;
+      rw = Math.max(w0, w1); rx = (W - rw) / 2; ry = cy - gap / 2; rh = gap;
+    }
+    // then the opening grows to the whole screen
+    rx = lerp(rx, 0, b); ry = lerp(ry, 0, b); rw = lerp(rw, W, b); rh = lerp(rh, H, b);
+    zph.style.visibility = a > 0 ? 'inherit' : 'hidden';
+    zph.style.clipPath = `inset(${ry.toFixed(1)}px ${(W - rx - rw).toFixed(1)}px ${(H - ry - rh).toFixed(1)}px ${rx.toFixed(1)}px round ${(8 * (1 - b)).toFixed(1)}px)`;
+    zImg.style.transform = `scale(${(1.25 - .25 * b).toFixed(4)})`;
+  }
+
+  /* the form: nothing is sent anywhere in this mock; sending plays the plug going into the outlet */
+  const zf = $('[data-zf]'), zDone = $('[data-zdone]'), zMsg = $('[data-zmsg]'), plug = $('[data-plug]'), led = $('[data-led]'), glow = $('[data-glow]');
+  zf.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const need = ['ime', 'gde'].map((n) => zf.elements[n]), em = zf.elements.email, tel = zf.elements.tel;
+    let bad = need.filter((el) => !el.value.trim());
+    const contact = /\S+@\S+\.\S+/.test(em.value) || tel.value.replace(/\D/g, '').length >= 6;
+    if (!contact) bad.push(em);
+    [...need, em].forEach((el) => el.toggleAttribute('aria-invalid', bad.includes(el)));
+    if (bad.length) { zMsg.textContent = 'Treba nam ime, mesto i email ili telefon.'; bad[0].focus(); return; }
+    zMsg.textContent = ''; zf.hidden = true; zDone.hidden = false;
+    const h = $('[data-zdoneh]'), p = $('[data-zdonep]'), again = $('[data-zagain]'), name = zf.elements.ime.value.trim().split(/\s+/)[0];
+    h.textContent = 'Šaljemo…'; p.textContent = 'Utikač ide u utičnicu.'; again.hidden = true; led.classList.remove('on');
+    const tl = G.timeline();
+    // the loading state: the plug edges toward the outlet, then snaps in on the beat; the light comes on
+    tl.set(plug, { x: -90 }).set(glow, { opacity: 0, scale: .6, transformOrigin: '50% 50%' })
+      .to(plug, { x: -30, duration: 1.25, ease: 'sine.inOut' })
+      .to(plug, { x: -40, duration: .25, ease: 'sine.inOut' })
+      .to(plug, { x: 24, duration: .333, ease: 'snappy' })
+      .add(() => { led.classList.add('on'); h.textContent = 'Čujemo se uskoro.'; p.textContent = `Hvala${name ? ', ' + name : ''}. Javljamo se u roku od jednog radnog dana.`; again.hidden = false; G.fromTo([h, p], { y: '1.4rem', autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: .5, ease: 'snappy', stagger: .083 }); })
+      .to(glow, { opacity: 1, scale: 1, duration: .167, ease: 'power2.out' }, '<')
+      .to(glow, { opacity: 0, scale: 1.4, duration: .667, ease: 'power2.out' });
+  });
+  $('[data-zagain]').addEventListener('click', () => { zf.reset(); zf.hidden = false; zDone.hidden = true; zf.elements.ime.focus(); });
+
+  /* ---------------- the frames, drawn from the scroll ---------------- */
+  const heroImgs = $$('#sc-h .hi'), haze = $('[data-haze]');
+  // B: each drawing draws its strokes one after another, holds, then undraws in the same order (the line runs on and
+  // leaves from its start) while the next one draws. The last one stays until Podne covers it.
+  const DRAWS = $$('[data-draw]').map((svg) => { const ps = $$('path', svg); ps.forEach((p) => p.setAttribute('pathLength', '1')); return ps; });
+  // half a screen to draw, a short hold, a third of a screen to undraw (Frame by Frame: exits short, about 0.2–0.35 screens)
+  const DW = [{ a: .15, b: .65, u: .85 }, { a: .9, b: 1.4, u: 1.6 }, { a: 1.65, b: 2.15, u: 2.45 }], UD = .35;
+  function renderArt(t) {
+    DRAWS.forEach((ps, j) => {
+      const { a, b, u } = DW[j], n = ps.length, seg = (b - a) * .45, step = n > 1 ? (b - a - seg) / (n - 1) : 0, useg = UD * .45, ustep = n > 1 ? (UD - useg) / (n - 1) : 0;
+      ps.forEach((p, i) => { const dr = map(t, a + i * step, a + i * step + seg), un = map(t, u + i * ustep, u + i * ustep + useg); p.style.strokeDashoffset = (un > 0 ? -un : 1 - dr).toFixed(4); p.style.visibility = dr > 0 && un < 1 ? '' : 'hidden'; });
+    });
+  }
+  const kDim = $('[data-dim]');
+  // a card rising from below: corners flatten as it lands (e²), its photo starts higher and catches up (Joby SectionEntry)
+  function rise(sc, t, enter) { const e = map(t, 0, enter), ee = ease(e); sc.card.style.transform = `translate3d(0, ${((1 - ee) * 100).toFixed(3)}%, 0)`; const r = R * (1 - e * e); sc.card.style.borderRadius = r > .3 ? `${r.toFixed(1)}px ${r.toFixed(1)}px 0 0` : '0'; return { e, ee, mty: -(1 - ee) * 60 }; }
+  // a frame lifting off: it slides up with rounded bottom corners and its photo lags behind
+  function lift(sc, t, a, b) { const l = ease(map(t, a, b)); if (l <= 0) return 0; sc.card.style.transform = `translate3d(0, ${(-l * 100).toFixed(3)}%, 0)`; const r = R * l; sc.card.style.borderRadius = `0 0 ${r.toFixed(1)}px ${r.toFixed(1)}px`; return l; }
+  // plain scroll (Joby after its carousel, and SectionEntry's exit): straight edges, welded 1:1 to the scroll, so the frame
+  // going out and the frame coming in share one moving seam; only the photo inside lags (parallax)
+  function scrollIn(sc, t, a, b) { const e = map(t, a, b); sc.card.style.transform = `translate3d(0, ${((1 - e) * 100).toFixed(3)}%, 0)`; sc.card.style.borderRadius = '0'; return e; }
+  function scrollOut(sc, t, a, b) { const o = map(t, a, b); if (o <= 0) return 0; sc.card.style.transform = `translate3d(0, ${(-o * 100).toFixed(3)}%, 0)`; sc.card.style.borderRadius = '0'; return o; }
+  function setMedia(sc, ty, s) { if (sc.media) sc.media.style.transform = `translate3d(0, ${ty.toFixed(3)}%, 0) scale(${s.toFixed(4)})`; }
+  const R_ = {
+    h(t) {
+      const z12 = ease(map(t, 1.3, 2.0)), z23 = ease(map(t, 3.0, 3.7));
+      const p1 = map(t, 0, 1.3), p2 = map(t, 2.0, 3.0), p3 = map(t, 3.7, 4.6);
+      const s = [(1 + .06 * p1) * (1 + 1.3 * Math.pow(z12, 1.6)), (1.35 - .35 * z12) * (1 + .06 * p2) * (1 + 1.3 * Math.pow(z23, 1.6)), (1.35 - .35 * z23) * (1 + .06 * p3)];
+      const o = [1 - map(z12, .45, .9), map(z12, .35, .8) * (1 - map(z23, .45, .9)), map(z23, .35, .8)];
+      heroImgs.forEach((el, i) => { el.style.transform = `scale(${s[i].toFixed(4)})`; el.style.opacity = o[i].toFixed(3); el.style.visibility = o[i] > .001 ? 'inherit' : 'hidden'; });
+      haze.style.opacity = (.62 * bell(map(t, 1.3, 2.0)) + .62 * bell(map(t, 3.0, 3.7))).toFixed(3);
+      const l = lift(SC.h, t, 4.4, 5.0); if (l <= 0) { SC.h.card.style.transform = 'none'; SC.h.card.style.borderRadius = '0'; }
+      setMedia(SC.h, l * 40, 1);
+    },
+    k(t) {
+      if (TY.who) { TY.who.tl.progress(prog(t, TY.who.w, TY.who.bis)); TY.stmt.tl.progress(prog(t, TY.stmt.w, TY.stmt.bis)); }
+      const v = S.variant;
+      if (v === 'b') renderArt(t);
+      if (v === 'e') renderRing(t);
+      if (v === 'd') {
+        const t0 = 3.0; $('[data-colk]').style.opacity = (map(t, t0, t0 + .3) * (1 - map(t, 6.3, 6.6))).toFixed(3);
+        colWords.forEach((w, k) => { const yN = colTop(k) - (t - t0); w.style.transform = `translate3d(0, ${((yN + look(DROP, yN)) * H).toFixed(2)}px, 0) scale(${look(SCALE, yN).toFixed(4)})`; w.style.visibility = yN < -.6 || yN > 1.2 ? 'hidden' : 'inherit'; w.style.opacity = map(yN, -.04, .14).toFixed(3); });
+      }
+      kDim.style.opacity = (.22 * map(t, SC.k.len - .8, SC.k.len)).toFixed(3);
+    },
+    p(t) {
+      const r = rise(SC.p, t, .8), o = scrollOut(SC.p, t, 3.4, 4.0);
+      setMedia(SC.p, o > 0 ? o * 40 : r.mty, 1 + .1 * map(t, 0, 4.0));
+    },
+    w(t) { const i = scrollIn(SC.w, t, 0, .6); if (i >= 1) scrollOut(SC.w, t, 5.4, 6.2); renderSplit(t); },
+    b(t) {
+      // 5 → 6: Balans lifts away with its bottom corners rounding (Joby's hero exit), uncovering the night
+      SC.b.el.style.zIndex = t > 3.2 ? '48' : '45';
+      const i = scrollIn(SC.b, t, 0, .8), l = lift(SC.b, t, 3.2, 4.2);
+      setMedia(SC.b, l > 0 ? l * 40 : -(1 - i) * 40, 1 + .1 * map(t, 0, 4.2));
+      if (TY.b0) { TY.b0.tl.progress(prog(t, TY.b0.w, TY.b0.bis)); TY.b1.tl.progress(prog(t, TY.b1.w, TY.b1.bis)); }
+    },
+    x(t) {
+      renderBerza(t);
+      // 6 → 7: Berza moves up a whole screen on the same eased curve and over the same 1.3 screens as the quote card rises
+      // (Breakthrough: graph exit at graphStart + 4.45 to 5.75 = quoteStart − .2 to + 1.1)
+      const v = t - 3.4; SC.x.card.style.transform = v > 0 ? `translate3d(0, ${(-cubicIO(map(v, 0, 1.3)) * 100).toFixed(3)}%, 0)` : 'none';
+    },
+    q(t) {
+      // Breakthrough HomeQuote: from a screen down to landed over 1.3 screens with 7% margins closing; picture at 40%, text at 87%
+      const card = SC.q.card, le = 1 - cubicIO(map(t, 0, 1.3)), ins = le * H * .07;
+      card.style.transform = `translate3d(0, ${(le * 100).toFixed(3)}%, 0)`; card.style.borderRadius = '0';
+      card.style.clipPath = le > 0 ? `inset(${ins.toFixed(1)}px round ${(1 + 4 * le).toFixed(1)}px)` : 'none';
+      const o = scrollOut(SC.q, t, 3.7, 4.5);
+      setMedia(SC.q, o > 0 ? o * 40 : -le * 60, 1 + .08 * map(t, 0, 4.5));
+      qCol.style.transform = `translate3d(0, ${(-le * 13).toFixed(2)}%, 0)`;
+      if (QT) QT.tl.progress(clamp((t - .8) / 1.0));
+    },
+    u(t) { const i = scrollIn(SC.u, t, 0, .8); if (i >= 1) scrollOut(SC.u, t, 5.6, 6.4); renderKupci(t); },
+    z(t) { scrollIn(SC.z, t, 0, .8); renderKontakt(t); },
+  };
+
+  let lastS = -1, curName = '';
+  function frame(force) {
+    const S_ = clamp(scrollPos() / unit, 0, total);
+    if (!force && Math.abs(S_ - lastS) < 1e-5) return; lastS = S_;
+    let cur = 'h';
+    for (const id of IDS) {
+      const sc = SC[id], t = S_ - sc.start, vis = t >= 0 && t < sc.len + (id === 'z' ? 9 : 0);
+      sc.el.style.visibility = vis || (id === 'h' && t < 0) ? 'visible' : 'hidden';
+      if (vis) { R_[id](t); if (t > (id === 'h' || id === 'k' || id === 'w' ? .6 : .8)) cur = id; }
+    }
+    if (S_ < SC.k.start + .6) cur = 'h';
+    for (const f of fades) { const t = S_ - SC[f.sc].start, inn = t >= f.a && t < f.b; if (inn !== f.on) { f.on = inn; playFade(f, inn); } }
+    zForm.style.pointerEvents = S_ - SC.z.start > 2.3 ? 'auto' : 'none';
+    playClip(S_);
+    for (const tr of trig) { const t = S_ - SC[tr.sc].start, inn = t >= tr.a && t < tr.b; if (inn !== tr.on && tr.split) { tr.on = inn; if (inn) playIn(tr); else playOut(tr, t >= tr.b); } }
+    { const onField = cur === 'k' || (cur === 'w' && S_ - SC.w.start < 1.6); const onPaper = (cur === 'w' && !onField) || cur === 'u' || (cur === 'z' && S_ - SC.z.start < 1.7); const m = onField ? 'field' : onPaper ? 'paper' : 'photo'; if (m !== barMode) setBarInk(m); }
+    // šta radimo: wherever the photo panel sits under a piece of the bar, that piece goes white
+    if (cur === 'w' && panel.style.visibility !== 'hidden') { const r = panel.getBoundingClientRect(); barEls.forEach((e) => { const b = e.getBoundingClientRect(), x = b.left + b.width / 2, y = b.top + b.height / 2, on = x > r.left && x < r.right && y > r.top && y < r.bottom; if (on !== e._w) { e._w = on; e.style.color = on ? '#FFFFFF' : ''; } }); }
+    else barEls.forEach((e) => { if (e._w) { e._w = false; e.style.color = ''; } });
+    if (cur !== curName) { curName = cur; $('#bar-frame').textContent = NAMES[cur]; $('#pin').dataset.cur = cur; }
+    $('#bench-hud').textContent = `screen ${S_.toFixed(2)} / ${total.toFixed(1)}`;
+  }
+  let barMode = 'photo';
+  const barEls = ['#bar-frame', '#bar-mark', '#bar-ask'].map((q) => $(q));
+  function setBarInk(mode) { barMode = mode; document.documentElement.style.setProperty('--bar-ink', mode === 'field' ? 'var(--field-ink)' : mode === 'paper' ? 'var(--paper-ink)' : '#FFFFFF'); }
+
+  /* ---------------- the bench ---------------- */
+  const bench = $('#bench');
+  const dock = () => { const d = !bench.hidden && bench.dataset.open === 'true' && innerWidth >= 1400; const was = document.documentElement.classList.contains('docked'); document.documentElement.classList.toggle('docked', d); return d !== was; };
+  $('#bench-t').addEventListener('click', () => { const o = bench.dataset.open !== 'true'; bench.dataset.open = String(o); $('#bench-t').setAttribute('aria-expanded', String(o)); store.set('eets-r4-bench', o ? '1' : '0'); if (dock()) rebuild(); });
+  if (store.get('eets-r4-bench') === '0' || innerWidth < 640) { bench.dataset.open = 'false'; $('#bench-t').setAttribute('aria-expanded', 'false'); }
+  // showcase: the link with #showcase opens without the bench; three quick clicks on Pošalji toggle it either way
+  const setShow = (on) => { bench.hidden = on; if (dock()) rebuild(); };
+  bench.hidden = location.hash !== '#bench';
+  addEventListener('hashchange', () => { if (location.hash === '#showcase') setShow(true); });
+  { let n = 0, t0 = 0; $('.z-send').addEventListener('click', () => { const now = performance.now(); n = now - t0 < 450 ? n + 1 : 1; t0 = now; if (n === 3) { n = 0; setShow(!bench.hidden); } }); }
+  dock();
+  const JUMP = [['01', 'h', .2], ['02', 'k', .2], ['03', 'p', .9], ['04', 'w', .7], ['05', 'b', .9], ['06', 'x', 1.8], ['07', 'q', 2.0], ['08', 'u', 1.2], ['09', 'z', 2.6]];
+  $('#jumps').innerHTML = JUMP.map(([n, id]) => `<button type="button" data-j="${id}">${n}</button>`).join('');
+  $('#jumps').addEventListener('click', (e) => { const b = e.target.closest('[data-j]'); if (!b) return; const j = JUMP.find((x) => x[1] === b.dataset.j); go((SC[j[1]].start + j[2]) * unit); });
+  function go(y) { if (lenisRef.l) lenisRef.l.scrollTo(y, { duration: 1.4 }); else scrollTo({ top: y, behavior: reduce ? 'auto' : 'smooth' }); }
+  $('#bar-mark').addEventListener('click', (e) => { e.preventDefault(); go(0); });
+  $('#bar-ask').addEventListener('click', () => go((SC.z.start + 2.6) * unit));
+  $('#who').innerHTML = WHO.map((w, i) => `<option value="${i}">${i + 1}. ${esc(w.replace(/\*/g, ''))}</option>`).join('');
+  $('#stmt').innerHTML = STMT.map((w, i) => `<option value="${i}">${i + 1}. ${esc(w.replace(/\*/g, ''))}</option>`).join('');
+  function renderBench() {
+    $$('#var-seg button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.v === S.variant)));
+    $('#var-hint').textContent = VHINT[S.variant];
+    $('#clip-seg').innerHTML = Object.entries(CLIPS).map(([k, [n]]) => `<button type="button" data-clip="${k}" aria-pressed="${String(S.clip) === k}">${n}</button>`).join('');
+    $('#clip-hint').textContent = (CLIPS[S.clip] || CLIPS.still)[1];
+    setClip();
+    $('#who').value = S.who; $('#stmt').value = S.stmt;
+    const gg = S.green, c = green(gg);
+    document.documentElement.style.setProperty('--field', c.hex);
+    document.documentElement.style.setProperty('--field-ink', c.L >= .6 ? '#0D140F' : '#F3F6F1');
+    $('#presets').innerHTML = PRESETS.map((p, i) => `<button type="button" data-p="${i}" style="--c:${green(p).hex}" title="${esc(p.name)}" aria-label="${esc(p.name)}" aria-pressed="${same(p, gg)}"></button>`).join('');
+    const hh = gg.grey ? 138 : gg.h, ll = gg.grey ? .68 : gg.l, cc = gg.grey ? 1 : gg.c;
+    $('#g-h').value = hh; $('#g-l').value = Math.round(ll * 100); $('#g-c').value = Math.round(cc * 100);
+    $('#g-hv').textContent = Math.round(hh) + '°'; $('#g-lv').textContent = ll.toFixed(2); $('#g-cv').textContent = Math.round(cc * 100) + '%';
+    $('#g-out').textContent = gg.grey ? `${c.hex} · grey, no green yet` : `${c.hex}${gg.hex ? ' · your hex' : ''} · oklch(${gg.l.toFixed(2)} ${c.C.toFixed(3)} ${Math.round(gg.h)}) · ${c.L >= .6 ? 'dark' : 'light'} type`;
+    const hx = $('#g-hex'); if (document.activeElement !== hx) { hx.value = gg.grey ? '' : c.hex; hx.removeAttribute('aria-invalid'); }
+    $('#kept').innerHTML = S.kept.map((k, i) => `<button type="button" data-k="${i}" style="--c:${green(k).hex}" title="${green(k).hex} · click to use, double-click to remove" aria-label="Kept green ${green(k).hex}"></button>`).join('');
+    $('#sc-w').classList.toggle('no-tri', S.variant === 'd' || S.variant === 'e');
+    $('#sc-k').dataset.v = S.variant; $('#sc-k').dataset.layout = S.art;
+    $('[data-art]').style.display = S.variant === 'b' ? '' : 'none';
+    $('#art-box').hidden = S.variant !== 'b';
+    $$('#art-seg button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.a === S.art))); $('#art-hint').textContent = AHINT[S.art];
+    ringEl.style.display = S.variant === 'e' ? '' : 'none';
+    col.style.display = S.variant === 'd' ? '' : 'none'; $('[data-colk]').style.display = S.variant === 'd' ? '' : 'none';
+    if (curName) setBarInk(barMode);
+  }
+  const same = (p, g2) => (p.grey || g2.grey ? !!p.grey === !!g2.grey : green(p).hex === green(g2).hex);
+  const hexIn = $('#g-hex'), hexMsg = $('#g-hexmsg');
+  function useHex(quiet) {
+    const hx = parseHex(hexIn.value);
+    if (!hx) { if (!quiet) { hexIn.setAttribute('aria-invalid', 'true'); hexMsg.textContent = 'Use 6 hex digits, for example #3FA34D.'; } return; }
+    hexIn.removeAttribute('aria-invalid'); hexMsg.textContent = ''; S.green = hexToGreen(hx); changed();
+  }
+  hexIn.addEventListener('input', () => { hexMsg.textContent = ''; hexIn.removeAttribute('aria-invalid'); if (hexIn.value.replace('#', '').trim().length === 6) useHex(true); });
+  hexIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); useHex(false); } });
+  hexIn.addEventListener('change', () => useHex(false));
+  $('#g-hex-go').addEventListener('click', () => useHex(false));
+  $('#var-seg').addEventListener('click', (e) => { const b = e.target.closest('[data-v]'); if (!b || b.dataset.v === S.variant) return; const s0 = clamp(scrollPos() / unit, 0, total), inK = s0 - SC.k.start; S.variant = b.dataset.v; changed(); rebuild(); if (inK > 0) go((SC.k.start + Math.min(inK, .4)) * unit); });
+  $('#clip-seg').addEventListener('click', (e) => { const b = e.target.closest('[data-clip]'); if (!b) return; S.clip = b.dataset.clip; changed(); frame(true); });
+  $('#art-seg').addEventListener('click', (e) => { const b = e.target.closest('[data-a]'); if (!b || b.dataset.a === S.art) return; S.art = b.dataset.a; changed(); frame(true); });
+  $('#who').addEventListener('change', (e) => { S.who = +e.target.value; changed(); buildTyped(); frame(true); });
+  $('#stmt').addEventListener('change', (e) => { S.stmt = +e.target.value; changed(); buildTyped(); frame(true); });
+  $$('[data-step]').forEach((b) => b.addEventListener('click', () => { const [k, d] = b.dataset.step.split(':'); const n = (k === 'who' ? WHO : STMT).length; S[k] = (S[k] + +d + n) % n; changed(); buildTyped(); frame(true); }));
+  $('#presets').addEventListener('click', (e) => { const b = e.target.closest('[data-p]'); if (!b) return; const p = PRESETS[+b.dataset.p]; S.green = p.grey ? { grey: true } : { h: p.h, l: p.l, c: p.c }; changed(); });
+  ['h', 'l', 'c'].forEach((k) => $('#g-' + k).addEventListener('input', () => { S.green = { h: +$('#g-h').value, l: +$('#g-l').value / 100, c: +$('#g-c').value / 100 }; changed(); }));
+  $('#g-keep').addEventListener('click', () => { if (S.green.grey) return; if (!S.kept.some((k) => same(k, S.green))) S.kept.push({ ...S.green }); S.kept = S.kept.slice(-14); changed(); });
+  $('#kept').addEventListener('click', (e) => { const b = e.target.closest('[data-k]'); if (b) { S.green = { ...S.kept[+b.dataset.k] }; changed(); } });
+  $('#kept').addEventListener('dblclick', (e) => { const b = e.target.closest('[data-k]'); if (b) { S.kept.splice(+b.dataset.k, 1); changed(); } });
+
+  /* ---------------- saving: this browser always, the artifact's store when the viewer offers it ---------------- */
+  let ref = null, saveT = 0, writing = false, again = false;
+  function setSave(s, txt) { $('#save').dataset.s = s; $('#save-txt').textContent = txt; }
+  function changed() {
+    S.updatedAt = new Date().toISOString(); store.set(LKEY, JSON.stringify(S)); renderBench();
+    if (!ref) return; setSave('busy', 'Saving…'); clearTimeout(saveT); saveT = setTimeout(flush, 900);
+  }
+  async function flush() {
+    if (!ref) return; if (writing) { again = true; return; } writing = true;
+    try { await ref.set(JSON.parse(JSON.stringify(S))); setSave('ok', 'Saved for Claude'); }
+    catch (e) { if (e && e.code === 'unavailable') setTimeout(flush, 1500); else { ref = null; setSave('local', 'Saved in this browser'); } }
+    writing = false; if (again) { again = false; flush(); }
+  }
+  (async () => {
+    if (!window.claude || !window.claude.use) return;
+    let db = null; try { db = await window.claude.use('db'); } catch (e) { db = null; }
+    if (!db) return;
+    ref = db.doc('round4/picks');
+    try {
+      const snap = await ref.get();
+      if (snap.exists) { const d = snap.data() || {}; if (!S.updatedAt || (d.updatedAt && d.updatedAt >= S.updatedAt)) { S = Object.assign(blank(), JSON.parse(JSON.stringify(d))); store.set(LKEY, JSON.stringify(S)); renderBench(); rebuild(); } else flush(); }
+      else if (S.updatedAt) flush();
+      setSave('ok', 'Saved for Claude');
+    } catch (e) { ref = null; }
+  })();
+
+  /* ---------------- build, resize, run ---------------- */
+  // hero: the word drops to a tenth of its size above the small line, and both start on the same ink edge
+  // (big type carries a visible side bearing, so each word is pulled left by its own)
+  const inkCtx = document.createElement('canvas').getContext('2d');
+  function inkLeft(el) { const cs = getComputedStyle(el); inkCtx.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`; return inkCtx.measureText(el.textContent.trim()).actualBoundingBoxLeft; }
+  function fitHero() {
+    const hl = $('.h-line'); hl.style.marginLeft = ''; SC.h.el.style.setProperty('--hl', hl.offsetHeight + 'px');
+    const base = inkLeft(hl); hl.style.marginLeft = base.toFixed(1) + 'px';
+    hw.forEach((w) => { w.style.marginLeft = inkLeft(w).toFixed(1) + 'px'; });
+  }
+  // podne: every label box gets the height of the tallest, so the three rules sit on one line whatever the copy
+  function evenLabs() { const labs = $$('[data-num] .lab'); labs.forEach((l) => { l.style.minHeight = ''; }); const mh = Math.max(...labs.map((l) => l.offsetHeight)); labs.forEach((l) => { l.style.minHeight = mh + 'px'; }); }
+  function rebuild() {
+    W = pin.clientWidth || innerWidth; H = pin.offsetHeight || innerHeight; phone = W < 760; R = phone ? W * .12 : Math.min(160, W * .11);
+    layout(); fitHero(); evenLabs(); g = null; geo(); fitCol(); fitRing(); cg = null; zg = null; buildQuote(); chartGeo(); buildCvText(); cvSlides.forEach(({ box, text }) => { box.style.transformOrigin = ''; text.style.transform = ''; });
+    trig.forEach((t) => t.make());
+    buildTyped();
+    lastS = -1; curName = ''; frame(true);
+  }
+  renderBench();
+  let lenis = null;
+  function setSmooth(on) {
+    if (on && !lenis && !reduce) { lenis = new Lenis({ lerp: 0.1, smoothWheel: true }); }
+    if (!on && lenis) { lenis.destroy(); lenis = null; }
+    lenisRef.l = lenis; $('#smooth').setAttribute('aria-pressed', String(!!lenis)); $('#smooth').textContent = lenis ? 'Smooth on' : 'Smooth off'; store.set('eets-r4-smooth', lenis ? '1' : '0');
+  }
+  $('#smooth').addEventListener('click', () => setSmooth(!lenis));
+  $('#bench').setAttribute('data-lenis-prevent', '');
+  // one driver: Lenis's unrounded position, read on the same tick that moves Lenis, draws every frame
+  G.ticker.add((time) => { if (lenis) lenis.raf(time * 1000); frame(false); });
+  G.ticker.lagSmoothing(0);
+  // a phone's address bar changes the height while scrolling; rebuild only for a real change of size
+  let rt = 0; addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { dock(); const h = pin.offsetHeight || innerHeight; if ((pin.clientWidth || innerWidth) !== W || Math.abs(h - H) > 120) rebuild(); else { unit = h; H = h; track.style.height = Math.round((total + 1) * unit) + 'px'; } }, 150); });
+  document.fonts.ready.then(() => { rebuild(); setSmooth(store.get('eets-r4-smooth') !== '0'); });
+  rebuild();
+})();
+</script>
+
+</html>
