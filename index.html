@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<title>EETS Round 4 V2</title>
-<meta name="description" content="EETS home page, round 4, version 2: one white line drawing at a time, the keyword ring, three card cuts and three plain scrolls, with the bench.">
+<title>EETS Round 4 V3</title>
+<meta name="description" content="EETS home page, round 4, version 3: text holds still while the pictures move, the static frames are shorter, one fluid type scale, and text plays once.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..800&family=Geist+Mono:wght@400;500;600&display=swap">
@@ -27,12 +27,20 @@
   --mono: "Geist Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   --t-hero: clamp(4.4rem, 15vw, 17rem);
   --t-num: clamp(4.4rem, 14vw, 15rem);
-  --t-say: clamp(2rem, 4.6vw, 5.6rem);
   --t-word: clamp(3rem, 11vw, 12rem);
-  --t-body: 15px;
-  --t-cap: 11px;
-  /* phones: statement lines at ~8 vw (Breakthrough 28.5-33.7 px, Joby 33.3, On 29.1 on a 390 screen; docs/refs/round4/type-scale.json) */
-  --t-say-m: clamp(26px, 8vw, 36px);
+  /* one fluid type scale (Breakthrough's method, docs/phone-type-tails-return.md): each step runs in a straight line from
+     its phone size at 375 px to its desktop size at 1440 px (A rem + B vw), floored at the phone size and capped where V2
+     stopped growing. Nothing on a phone is under 12 px, and the middle steps (lead, quote, card titles) carry the text
+     between the statements and the body. Giant words stay in vw. Phone → 1440: cap 12 → 13, body 15 → 18, lead 18 → 20,
+     quote 21 → 32, h5 26 → 44, fill 30 → 63, say 30 → 66 (Breakthrough 28.5–33.7 px on a 390 phone, Joby 33.3, ON 29.1). */
+  --t-cap: clamp(.75rem, .728rem + .094vw, .8125rem);
+  --t-body: clamp(.9375rem, .8715rem + .282vw, 1.25rem);
+  --t-lead: clamp(1.125rem, 1.081rem + .188vw, 1.375rem);
+  --t-quote: clamp(1.3125rem, 1.0704rem + 1.033vw, 2.4rem);
+  --t-h5: clamp(1.625rem, 1.229rem + 1.69vw, 3.875rem);
+  --t-fill: clamp(1.875rem, 1.149rem + 3.099vw, 5.4rem);
+  --t-say: clamp(1.875rem, 1.083rem + 3.38vw, 5.6rem);
+  --t-say-m: var(--t-say);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) { --bg: #151515; --surface: #1D1D1D; --ink: #ECECEC; --ink-2: #C6C6C6; --muted: #8F8F8F; --rule: #313131; color-scheme: dark; }
@@ -66,9 +74,7 @@ button, select, input { font: inherit; color: inherit; }
 /* top bar: logo top centre (placeholder wordmark until the brand work), the frame on the left, the ask on the right */
 .bar { position: fixed; z-index: 30; top: 0; left: 0; right: 0; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center;
   padding: calc(env(safe-area-inset-top, 0px) + 14px) max(18px, env(safe-area-inset-right, 0px)) 0 max(18px, env(safe-area-inset-left, 0px));
-  color: var(--bar-ink, #FFFFFF); pointer-events: none; transition: color .3s, transform .45s cubic-bezier(.2, .21, 0, 1); }
-/* phones: the content flows up under the bar, so the bar slides away on the way down and comes back on the way up */
-.bar.away { transform: translate3d(0, -130%, 0); }
+  color: var(--bar-ink, #FFFFFF); pointer-events: none; transition: color .3s; }
 .bar > * { pointer-events: auto; transition: color .2s; }
 .bar-frame { font: 500 var(--t-cap)/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; }
 .bar-mark { font: 640 23px/1 var(--sans); letter-spacing: -.055em; text-decoration: none; color: inherit; }
@@ -79,7 +85,7 @@ button, select, input { font: inherit; color: inherit; }
 /* the small line sits a tenth of the word's size under it, on the same ink edge (Joby's stat labels and Breakthrough's
    headline + line pairs measure .1–.3 em; --hl is the small line's height, set in rebuild) */
 .h-word { position: absolute; left: max(22px, 4vw); bottom: calc(7vh + var(--hl, 27px) + .1em); color: var(--photo-ink); font: 560 var(--t-hero)/.86 var(--sans); letter-spacing: -.055em; }
-.h-line { position: absolute; left: max(22px, 4vw); bottom: 7vh; color: var(--photo-ink); font: 450 clamp(15px, 1.25vw, 20px)/1.35 var(--sans); max-width: 34ch; opacity: .95; }
+.h-line { position: absolute; left: max(22px, 4vw); bottom: 7vh; color: var(--photo-ink); font: 450 var(--t-lead)/1.35 var(--sans); max-width: 34ch; opacity: .95; }
 .h-cue { position: absolute; right: max(22px, 4vw); bottom: 7vh; color: var(--photo-ink); font: 500 var(--t-cap)/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; display: flex; gap: 10px; align-items: center; }
 .h-cue i { width: 1px; height: 34px; background: currentColor; transform-origin: 50% 0; animation: cue 1.667s cubic-bezier(.2, .21, 0, 1) infinite; }
 @keyframes cue { 0% { transform: scaleY(0); } 50% { transform: scaleY(1); } 100% { transform: scaleY(1); opacity: 0; } }
@@ -115,9 +121,7 @@ button, select, input { font: inherit; color: inherit; }
 .num { position: absolute; left: max(22px, 4vw); bottom: 9vh; color: var(--photo-ink); width: min(64rem, 88%); }
 .num .n { display: block; font: 560 var(--t-num)/.88 var(--sans); letter-spacing: -.055em; white-space: nowrap; }
 .num .hair { display: block; height: 1px; background: currentColor; margin-top: 1.4rem; transform-origin: 0 50%; transform: scaleX(var(--p, 0)); }
-.num .lab { display: block; margin-top: .9rem; font: 450 clamp(15px, 1.2vw, 19px)/1.35 var(--sans); max-width: 32ch; }
-/* phones: the numbers flow up the photo as a column, at the hero word's size */
-@media (max-width: 759px) { .num .n { font-size: 21vw; } }
+.num .lab { display: block; margin-top: .9rem; font: 450 var(--t-lead)/1.35 var(--sans); max-width: 32ch; }
 
 /* 04 šta radimo: the card that opens to the left (Joby /experience SectionSlider, from Frame by Frame) */
 #sc-w .card { background: var(--paper); color: var(--paper-ink); }
@@ -153,11 +157,13 @@ button, select, input { font: inherit; color: inherit; }
 @media (prefers-reduced-motion: reduce) { .sp-fig * { animation: none !important; } }
 .sp-text { position: absolute; z-index: 2; opacity: 0; }
 .sp-text .n { display: block; font: 500 var(--t-cap)/1 var(--mono); letter-spacing: .08em; color: #77776E; }
-.sp-text h5 { margin-top: 12px; font: 580 clamp(1.8rem, 3vw, 3.6rem)/.98 var(--sans); letter-spacing: -.045em; }
-.sp-text p { margin-top: 14px; font: 400 clamp(14px, calc(8px + .55vw), 20px)/1.42 var(--sans); color: #45483F; max-width: 32ch; }
+.sp-text h5 { margin-top: 12px; font: 580 var(--t-h5)/.98 var(--sans); letter-spacing: -.045em; }
+.sp-text p { margin-top: 14px; font: 400 var(--t-body)/1.42 var(--sans); color: #45483F; max-width: 32ch; }
 .sp-text .tri { margin-top: 16px; font: 500 var(--t-cap)/1.4 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: #121512; }
 .no-tri .sp-text .tri { display: none; }
-@media (max-width: 760px) { .sp-text h5 { font-size: 1.6rem; margin-top: 8px; } .sp-text p { margin-top: 8px; font-size: 14px; } .sp-text .tri { margin-top: 8px; } .sp-fig figcaption { font-size: 10px; } }
+@media (max-width: 760px) { .sp-text h5 { margin-top: 8px; } .sp-text p { margin-top: 8px; } .sp-text .tri { margin-top: 8px; } }
+/* short screens (landscape phones): the drawing loses its caption and shrinks to the room above the text (geo) */
+#sc-w.short .sp-fig figcaption { display: none; }
 
 /* 05 balans: typed lines in the sky */
 .b-typed { position: absolute; left: max(22px, 4vw); top: 22vh; width: min(17ch, 88%); color: var(--photo-ink); font: 540 var(--t-say)/1.02 var(--sans); letter-spacing: -.045em; }
@@ -177,12 +183,10 @@ button, select, input { font: inherit; color: inherit; }
 .x-chart .price { fill: none; stroke: #FFFFFF; stroke-width: 1.6; stroke-linejoin: round; stroke-dasharray: 1 1; stroke-dashoffset: 1; }
 /* the day under the price line fills in behind the dot, so the drawing shows as a sweep, not only as a thin line */
 .x-chart .area { fill: url(#x-fill); stroke: none; }
-/* "Vaša ne mora": a band of our colour fills under the flat price as it draws, and the market's swings fade back */
-.x-chart .farea { fill: var(--field); opacity: .3; stroke: none; }
 .x-chart .fixed { fill: none; stroke: var(--field); stroke-width: 2.4; stroke-dasharray: 1 1; stroke-dashoffset: 1; }
 .x-dot { position: absolute; left: 0; top: 0; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: var(--field); box-shadow: 0 0 0 6px color-mix(in srgb, var(--field) 25%, transparent); }
-.x-hours { position: absolute; left: 0; right: 0; bottom: -1.8rem; display: flex; justify-content: space-between; font: 500 10.5px/1 var(--mono); letter-spacing: .06em; opacity: .5; }
-.x-fixlab { position: absolute; right: 0; font: 500 var(--t-cap)/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--field); opacity: 0; transform: translateY(-140%); }
+.x-hours { position: absolute; left: 0; right: 0; bottom: -1.8rem; display: flex; justify-content: space-between; font: 500 var(--t-cap)/1 var(--mono); letter-spacing: .06em; opacity: .5; }
+.x-fixlab { position: absolute; right: 0; font: 500 var(--t-cap)/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--field); opacity: 0; transform: translateY(-140%); padding-right: 24px; }
 @media (max-width: 759px) { .x-say { top: calc(env(safe-area-inset-top, 0px) + 110px); font-size: var(--t-say-m); } .x-read { left: 18px; right: auto; top: auto; bottom: calc(10vh + 34vh + 3.4rem); text-align: left; } .x-read b { font-size: 19vw; } .x-chart { height: 34vh; left: 18px; right: 18px; } .x-hours span:nth-child(even) { display: none; } }
 
 /* 07 poreklo: Breakthrough's quote cascade over the partner's plant, with an origin card where theirs has a video card */
@@ -193,37 +197,38 @@ button, select, input { font: inherit; color: inherit; }
 #sc-q[data-clip="100415"] .q-shade { background: linear-gradient(90deg, rgba(0, 0, 0, .18) 15%, rgba(0, 0, 0, .66)); }
 .q-shade { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0, 0, 0, .08) 20%, rgba(0, 0, 0, .55)); }
 .q-col { position: absolute; inset: 0; will-change: transform; }
-.q-box { position: absolute; right: max(22px, 4vw); top: 18vh; width: min(40rem, calc(100% - 44px)); font: 520 clamp(1.4rem, 2.2vw, 2.4rem)/1.12 var(--sans); letter-spacing: -.028em; }
+.q-box { position: absolute; right: max(22px, 4vw); top: 18vh; width: min(40rem, calc(100% - 44px)); font: 520 var(--t-quote)/1.12 var(--sans); letter-spacing: -.028em; }
 .q-box .hl { color: var(--field); }
 /* desktop: the quote and the name sit on the right edge; the closing mark hangs past it so the edge stays straight
    (the name's top is set in buildQuote, just under the last line). Phones keep the left-aligned layout. */
 .q-box { text-align: right; }
 .q-box .qe { display: inline-block; width: 0; white-space: nowrap; }
-.q-who { position: absolute; right: max(22px, 4vw); text-align: right; top: 60vh; font: 500 15px/1.3 var(--sans); opacity: 0; }
+.q-who { position: absolute; right: max(22px, 4vw); text-align: right; top: 60vh; font: 500 var(--t-lead)/1.3 var(--sans); opacity: 0; }
 .q-who span { display: block; color: var(--field); font-weight: 400; }
 .q-card { position: absolute; right: max(22px, 4vw); bottom: 9vh; width: clamp(170px, 20vw, 300px); padding: 14px 16px 16px; border-radius: 6px; background: rgba(12, 14, 12, .72); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); box-shadow: 0 10px 40px rgba(0, 0, 0, .35); opacity: 0; }
 .q-card svg { display: block; width: 100%; height: auto; }
 .q-card svg path { fill: none; stroke: rgba(255, 255, 255, .7); stroke-width: 1.2; vector-effect: non-scaling-stroke; }
 .q-card svg circle { fill: var(--field); }
-.q-card p { margin-top: 10px; font: 500 10.5px/1.45 var(--mono); letter-spacing: .05em; text-transform: uppercase; }
+.q-card p { margin-top: 10px; font: 500 var(--t-cap)/1.45 var(--mono); letter-spacing: .05em; text-transform: uppercase; }
 .q-card p b { display: block; font-weight: 500; color: var(--field); }
-/* phones: the name sits under the quote and the origin card a screen further down; the column flows up (buildQuote sets the tops) */
-@media (max-width: 759px) { .q-box { left: 18px; right: 18px; width: auto; top: 24%; font-size: clamp(19px, 5.4vw, 23px); } .q-who { left: 18px; right: auto; text-align: left; } .q-box { text-align: left; } .q-card { width: 58vw; right: 18px; bottom: auto; } }
+/* phones: the quote at the top, the name bottom left and the origin card bottom right, all on one screen (as before the
+   scroll-feel commit: the user wants to see them together) */
+@media (max-width: 759px) { .q-box { left: 18px; right: 18px; width: auto; top: calc(env(safe-area-inset-top, 0px) + 110px); } .q-who { left: 18px; right: auto; text-align: left; top: auto !important; bottom: 9vh; } .q-box { text-align: left; } .q-card { width: 50vw; right: 18px; bottom: 7vh; } }
 
 /* 08 za kupce: one sentence fills from faint to ink, then Joby's conveyor (Experience Highlights, from Frame by Frame) */
 #sc-u .card { background: var(--paper); color: var(--paper-ink); }
 .u-kick { position: absolute; left: max(22px, 4vw); top: 22vh; font: 500 var(--t-cap)/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; opacity: .6; }
-.fill { position: absolute; left: max(22px, 21vw); top: 22vh; width: min(20ch, calc(100% - 44px)); font: 560 clamp(2.1rem, 4.4vw, 5.4rem)/1.04 var(--sans); letter-spacing: -.045em; will-change: transform, opacity; }
+.fill { position: absolute; left: max(22px, 21vw); top: 22vh; width: min(20ch, calc(100% - 44px)); font: 560 var(--t-fill)/1.04 var(--sans); letter-spacing: -.045em; will-change: transform, opacity; }
 .fill .fw { opacity: .16; }
 .cv-slide { position: absolute; inset: 0; pointer-events: none; }
 .cv-img { position: absolute; left: 0; top: 0; overflow: hidden; transform-origin: 0 0; will-change: transform; }
 .cv-img img { width: 100%; height: 100%; object-fit: cover; transform-origin: 50% 55%; will-change: transform; }
-.cv-text { position: absolute; font: 450 clamp(15px, calc(8px + .55vw), 21px)/1.35 var(--sans); color: #45483F; opacity: 0; }
+.cv-text { position: absolute; font: 450 var(--t-body)/1.35 var(--sans); color: #45483F; opacity: 0; }
 .cv-text .n { display: block; font: 500 var(--t-cap)/1 var(--mono); letter-spacing: .08em; color: #77776E; }
-.cv-text h5 { margin: 12px 0 0; font: 580 clamp(2rem, 3.1vw, 4rem)/.96 var(--sans); letter-spacing: -.045em; color: var(--paper-ink); }
+.cv-text h5 { margin: 12px 0 0; font: 580 var(--t-h5)/.96 var(--sans); letter-spacing: -.045em; color: var(--paper-ink); }
 .cv-text p { margin-top: 12px; max-width: 24ch; }
 .cv-text u { display: inline-block; margin-top: 14px; text-decoration-thickness: 1px; text-underline-offset: 4px; font-size: .85em; color: var(--paper-ink); }
-@media (max-width: 759px) { .u-kick { top: calc(34% - 32px); } .fill { left: 18px; top: 34%; font-size: var(--t-say-m); } .cv-text h5 { font-size: 1.7rem; margin-top: 6px; } .cv-text p { margin-top: 6px; font-size: 14px; } .cv-text u { margin-top: 6px; } }
+@media (max-width: 759px) { .u-kick { top: calc(34% - 32px); } .fill { left: 18px; top: 34%; } .cv-text h5 { margin-top: 6px; } .cv-text p { margin-top: 6px; } .cv-text u { margin-top: 6px; } }
 
 /* 09 kontakt: a photo opens between two words (Joby /company), then the form over it */
 #sc-z .card { background: var(--paper); color: var(--paper-ink); }
@@ -232,11 +237,11 @@ button, select, input { font: inherit; color: inherit; }
 .z-ph img { width: 100%; height: 100%; object-fit: cover; will-change: transform; }
 .z-ph::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(0, 0, 0, .45), rgba(0, 0, 0, .15) 55%, rgba(0, 0, 0, .45)); }
 .z-head { position: absolute; left: max(22px, 4vw); top: 17vh; width: min(13ch, 46vw); color: #FFFFFF; font: 540 var(--t-say)/1.02 var(--sans); letter-spacing: -.045em; }
-.z-sub { position: absolute; left: max(22px, 4vw); bottom: 10vh; width: min(30ch, 40vw); color: #FFFFFF; font: 450 clamp(15px, 1.2vw, 19px)/1.4 var(--sans); opacity: 0; }
+.z-sub { position: absolute; left: max(22px, 4vw); bottom: 10vh; width: min(30ch, 40vw); color: #FFFFFF; font: 450 var(--t-lead)/1.4 var(--sans); opacity: 0; }
 .z-form { position: absolute; right: max(22px, 4vw); top: 50%; transform: translateY(-46%); width: min(27rem, 42vw); max-height: calc(100% - 150px); overflow-y: auto; padding: 26px 26px 24px; border-radius: 14px; color: #FFFFFF;
   background: rgba(10, 12, 10, .6); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); opacity: 0; visibility: hidden; }
 .z-form form { display: grid; gap: 14px; }
-.z-form label { display: grid; gap: 6px; font: 500 10.5px/1.2 var(--mono); letter-spacing: .07em; text-transform: uppercase; color: rgba(255, 255, 255, .72); }
+.z-form label { display: grid; gap: 6px; font: 500 var(--t-cap)/1.2 var(--mono); letter-spacing: .07em; text-transform: uppercase; color: rgba(255, 255, 255, .72); }
 .z-form input, .z-form select, .z-form textarea { width: 100%; min-width: 0; border: 0; border-bottom: 1px solid rgba(255, 255, 255, .38); background: transparent; color: #FFFFFF; padding: 7px 0 8px; font: 450 16px/1.3 var(--sans); letter-spacing: 0; text-transform: none; border-radius: 0; }
 .z-form select option { color: #111111; }
 .z-form textarea { resize: vertical; min-height: 2.6em; }
@@ -255,7 +260,7 @@ button, select, input { font: inherit; color: inherit; }
 .z-plug .led.on { fill: var(--field); }
 .z-plug .glow { stroke: var(--field); opacity: 0; }
 .z-done h4 { font: 540 clamp(1.8rem, 2.6vw, 2.8rem)/1 var(--sans); letter-spacing: -.045em; }
-.z-done p { font: 450 15px/1.45 var(--sans); color: rgba(255, 255, 255, .8); max-width: 30ch; }
+.z-done p { font: 450 var(--t-body)/1.45 var(--sans); color: rgba(255, 255, 255, .8); max-width: 30ch; }
 .z-again { border: 1px solid rgba(255, 255, 255, .5); background: transparent; color: #FFFFFF; border-radius: 999px; padding: 9px 15px; font: 500 13px/1 var(--sans); cursor: pointer; }
 @media (max-width: 759px) {
   .z-head { top: calc(env(safe-area-inset-top, 0px) + 78px); width: auto; right: 18px; left: 18px; font-size: var(--t-say-m); }
@@ -439,7 +444,7 @@ html.docked .bench { top: 0; bottom: 0; right: 0; width: 344px; max-height: none
         <h3 class="x-say" data-xsay="1" aria-hidden="true">Vaša ne mora.</h3>
         <p class="x-read" aria-hidden="true"><b data-xprice>92 €</b><span data-xhour>00:00 · MWh, dan unapred</span></p>
         <div class="x-chart" data-xchart>
-          <svg aria-hidden="true"><defs><linearGradient id="x-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".36"/><stop offset="1" stop-color="#FFFFFF" stop-opacity=".06"/></linearGradient><clipPath id="x-clip"><rect data-xclip x="0" y="-40" width="0" height="4000"/></clipPath><clipPath id="x-clip2"><rect data-xclip2 x="0" y="-40" width="0" height="4000"/></clipPath></defs><path class="grid" data-xgrid/><path class="area" data-xarea clip-path="url(#x-clip)"/><path class="farea" data-xfarea clip-path="url(#x-clip2)"/><path class="fixed" data-xfixed/><path class="price" data-xline/></svg>
+          <svg aria-hidden="true"><defs><linearGradient id="x-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFFFFF" stop-opacity=".36"/><stop offset="1" stop-color="#FFFFFF" stop-opacity=".06"/></linearGradient><clipPath id="x-clip"><rect data-xclip x="0" y="-40" width="0" height="4000"/></clipPath></defs><path class="grid" data-xgrid/><path class="area" data-xarea clip-path="url(#x-clip)"/><path class="fixed" data-xfixed/><path class="price" data-xline/></svg>
           <i class="x-dot" data-xdot></i>
           <span class="x-fixlab" data-xfixlab>Vaša cena, ista svakog sata</span>
           <div class="x-hours"><span>00</span><span>03</span><span>06</span><span>09</span><span>12</span><span>15</span><span>18</span><span>21</span><span>24</span></div>
@@ -507,10 +512,10 @@ html.docked .bench { top: 0; bottom: 0; right: 0; width: 344px; max-height: none
 </div></main>
 
 <aside class="bench" id="bench" data-open="true" aria-label="Bench: controls for this round">
-  <button type="button" class="bench-h" id="bench-t" aria-expanded="true">Bench · V2 <span id="bench-hud">screen 0.00</span></button>
+  <button type="button" class="bench-h" id="bench-t" aria-expanded="true">Bench · V3 <span id="bench-hud">screen 0.00</span></button>
   <div class="bench-b">
     <div><h4>Jump to</h4><div class="seg jumps" id="jumps"></div>
-      <p class="hint" style="margin-top:7px">Cuts in V2: the hero lifts off, Podne rises, Šta radimo's card opens, Balans lifts off into Berza, and Poreklo rises as Breakthrough's quote card while the graph moves up. The rest are plain scrolls, and Kontakt opens its photo between two words.</p></div>
+      <p class="hint" style="margin-top:7px">Cuts in V3: the hero lifts off, Podne rises, Šta radimo's card opens, Balans lifts off into Berza, and Poreklo rises as Breakthrough's quote card while the graph moves up. The rest are plain scrolls, and Kontakt opens its photo between two words.</p></div>
     <div><h4>07 · The picture under the quote</h4><div class="seg" id="clip-seg"></div><p class="hint" id="clip-hint" style="margin-top:7px"></p></div>
     <div><h4>Frame 2, after the two lines</h4><div class="seg" id="var-seg"><button type="button" data-v="b" aria-pressed="false">B · Line art</button><button type="button" data-v="c" aria-pressed="false">C · Nothing</button><button type="button" data-v="e" aria-pressed="false">E · Ring</button></div><p class="hint" id="var-hint" style="margin-top:7px"></p>
       <div id="art-box" style="margin-top:9px"><h4>Line art layout</h4><div class="seg" id="art-seg"><button type="button" data-a="yours" aria-pressed="false">Yours · big, behind</button><button type="button" data-a="mine" aria-pressed="false">Mine · split on phones</button></div><p class="hint" id="art-hint" style="margin-top:7px"></p></div></div>
@@ -638,9 +643,9 @@ html.docked .bench { top: 0; bottom: 0; right: 0; width: 344px; max-height: none
   ];
 
   /* ---------------- state ---------------- */
-  const LKEY = 'eets-r4-2';
+  const LKEY = 'eets-r4-3';
   // starts from the user's own lines (the last who line and statement in the lists) and the green #A3CD30
-  const blank = () => ({ clip: '7838', variant: 'b', art: 'mine', who: WHO.length - 1, stmt: STMT.length - 1, green: { hex: '#A3CD30', l: .7907, h: 124, C: .1806, c: .92 }, kept: [], updatedAt: '' });
+  const blank = () => ({ clip: '7838', variant: 'b', art: 'yours', who: WHO.length - 1, stmt: STMT.length - 1, green: { hex: '#A3CD30', l: .7907, h: 124, C: .1806, c: .92 }, kept: [], updatedAt: '' });
   let S = blank();
   try { const raw = store.get(LKEY); if (raw) S = Object.assign(blank(), JSON.parse(raw)); } catch (e) {}
 
@@ -652,18 +657,23 @@ html.docked .bench { top: 0; bottom: 0; right: 0; width: 344px; max-height: none
   IDS.forEach((id) => { const el = $('#sc-' + id); SC[id] = { id, el, card: $('[data-card]', el), media: $('[data-media]', el), start: 0, len: 0 }; });
   const NAMES = { h: '01 · Hero', k: '02 · Ko smo', p: '03 · Podne', w: '04 · Šta radimo', b: '05 · Balans', x: '06 · Berza', q: '07 · Poreklo', u: '08 · Za kupce', z: '09 · Kontakt' };
   const KLEN = { b: 5.4, c: 3.8, d: 6.9, e: 8.8 };
+  // Za kupce: the phone column is through by 5.0 of its window, the desktop conveyor by 5.6; Kontakt comes up then
+  const UO = () => (phone ? 5.0 : 5.6);
   function layout() {
     if (S.variant === 'd') S.variant = 'e'; // the column is out (user, 2026-10-22); it stays in V1
     const s = SC; s.h.start = 0; s.h.len = 5.0;
     s.k.start = 4.4; s.k.len = KLEN[S.variant];
-    // Podne rises over 1.5 screens, so its photo comes up under the statement instead of the statement holding alone
-    s.p.start = s.k.start + s.k.len - 1.5; s.p.len = 4.7;
-    s.w.start = s.p.start + 4.1; s.w.len = 6.2;
-    s.b.start = s.w.start + 5.4; s.b.len = 4.2;
-    s.x.start = s.b.start + 3.2; s.x.len = 4.7;   // Balans lifts off over 3.2 → 4.2 of its window
-    s.q.start = s.x.start + 3.4; s.q.len = 4.5;   // the quote card rises over 1.3 screens while Berza moves up
-    s.u.start = s.q.start + 3.7; s.u.len = 6.4;
-    s.z.start = s.u.start + 5.6; s.z.len = 3.4;
+    // V3: the statement holds still for 0.4 of a screen once it has typed (B), then Podne rises over it in 0.8, as before
+    // the scroll-feel commit
+    s.p.start = s.k.start + s.k.len - (S.variant === 'b' ? 1.65 : .8); s.p.len = 4.0;
+    s.w.start = s.p.start + 3.4; s.w.len = 6.2;
+    // V3: the frames whose text holds still are short (round 4 V3 plan): Balans 3.2 → 2.6, Berza 3.4 → 2.4, Poreklo
+    // 3.7 → 2.7, and the page ends once Kontakt's form is in
+    s.b.start = s.w.start + 5.4; s.b.len = 3.6;
+    s.x.start = s.b.start + 2.6; s.x.len = 3.7;   // Balans lifts off over 2.6 → 3.6 of its window
+    s.q.start = s.x.start + 2.4; s.q.len = 3.5;   // the quote card rises over 1.3 screens while Berza moves up
+    s.u.start = s.q.start + 2.7; s.u.len = UO() + .8;
+    s.z.start = s.u.start + UO(); s.z.len = 2.25;
     total = s.z.start + s.z.len;
     unit = pin.offsetHeight || innerHeight;
     track.style.height = Math.round((total + 1) * unit) + 'px';
@@ -681,20 +691,19 @@ html.docked .bench { top: 0; bottom: 0; right: 0; width: 344px; max-height: none
     trig.push(t); return t;
   }
   function playIn(t) { G.to(t.split.lines, { yPercent: 0, autoAlpha: 1, duration: t.big ? .833 : .667, ease: 'snappy', stagger: .083, overwrite: true }); if (t.onIn) t.onIn(); }
+  // play once (Joby, ON): after its first time in, a reveal is simply there when you come back to it, from below or on
+  // a later pass down (a short fade, no replay)
+  function showNow(t) { G.set(t.split.lines, { yPercent: 0 }); G.to(t.split.lines, { autoAlpha: 1, duration: .2, ease: 'power1.out', overwrite: true }); if (t.onIn) t.onIn(true); }
   function playOut(t, up) { G.to(t.split.lines, { yPercent: up ? -70 : 70, autoAlpha: 0, duration: .333, ease: 'power2.in', stagger: .042, overwrite: true }); if (t.onOut) t.onOut(); }
   const hw = $$('[data-hw]');
   masked(hw[0], 'h', -99, 1.45, true); masked(hw[1], 'h', 1.85, 3.15, true); masked(hw[2], 'h', 3.55, 4.55, true);
   const nums = $$('[data-num]');
-  // desktop: one number at a time in the corner, each drifting up with the thumb through its window. Phones: the three
-  // flow up the photo with the thumb as one column, .9 of a screen apart, so one is always in view (PN: when each one
-  // stands at its place in the corner); the first rides up with the rising card, and each plays in as it comes into view.
-  const NW = [[1.55, 2.45], [2.45, 3.3], [3.3, 4.3]], PN = [1.39, 2.29, 3.19];
-  const numT = nums.map((n, i) => { const t = masked($('.n', n), 'p', NW[i][0], NW[i][1], true); const lab = $('.lab', n), hair = $('.hair', n);
-    t.onIn = () => { G.fromTo(hair, { '--p': 0 }, { '--p': 1, duration: .833, ease: 'snappy', delay: .083, overwrite: true }); G.fromTo(lab, { y: '1.4rem', autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: .5, ease: 'snappy', delay: .25, overwrite: true }); };
+  // one number at a time in the corner, each replacing the last in place, on every screen (V3: text holds still)
+  const NW = [[.85, 1.75], [1.75, 2.6], [2.6, 3.6]];
+  nums.forEach((n, i) => { const t = masked($('.n', n), 'p', NW[i][0], NW[i][1], true); const lab = $('.lab', n), hair = $('.hair', n);
+    t.onIn = (quick) => { if (quick) { G.set(hair, { '--p': 1 }); G.set(lab, { y: 0 }); G.to(lab, { autoAlpha: 1, duration: .2, overwrite: true }); return; } G.fromTo(hair, { '--p': 0 }, { '--p': 1, duration: .833, ease: 'snappy', delay: .083, overwrite: true }); G.fromTo(lab, { y: '1.4rem', autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: .5, ease: 'snappy', delay: .25, overwrite: true }); };
     t.onOut = () => { G.to(hair, { '--p': 0, duration: .333, ease: 'power2.in', overwrite: true }); G.to(lab, { autoAlpha: 0, y: '-.6rem', duration: .25, ease: 'power2.in', overwrite: true }); };
-    G.set(lab, { autoAlpha: 0 }); return t; });
-  function numWindows() { numT.forEach((t, i) => { t.a = phone ? PN[i] - .1 : NW[i][0]; t.b = phone ? PN[i] + .95 : NW[i][1]; }); }
-  const numY = (i, t) => (phone ? (PN[i] - clamp(t, 1.5, 4.1)) * H : ((NW[i][0] + NW[i][1]) / 2 - clamp(t, NW[i][0] - .1, NW[i][1] + .1)) * H * .18);
+    G.set(lab, { autoAlpha: 0 }); });
   const wTitle = masked($('[data-wtitle]'), 'w', .3, 1.7, false);   // it leaves once the rising card has nearly reached it
 
   /* ---------------- typed statements (Breakthrough: lines glide in while their words switch on; scrubbed) ---------------- */
@@ -711,23 +720,32 @@ html.docked .bench { top: 0; bottom: 0; right: 0; width: 344px; max-height: none
     else if (exit === 'untype') { let q = inDur + .31; const ws = $$('.tw', box); tl.set(box.firstChild, { y: 0 }, 0); ws.forEach((w) => { tl.to(w, { autoAlpha: 0, duration: .001 }, q); q += .1; }); tl.to(box.firstChild, { y: -20, ease: 'power2.in', duration: q - inDur }, inDur + .01); }
     else tl.to({}, { duration: .001 }, inDur);
     tl.progress(1).progress(0);
-    return { tl, bis: inDur / tl.duration() };
+    return { tl, bis: inDur / tl.duration(), box, text, done: false };
   }
   const prog = (t, w, bis) => (t < w[1] ? clamp((t - w[0]) / (w[1] - w[0]), 0, bis) : clamp((t - w[2]) / (w[3] - w[2]), bis, 1));
+  // keep it typed: once a line has typed on it stays typed; coming back into its typing window (from below, or on a later
+  // pass down) it fades with the scroll instead of untyping word by word. Exits still follow the scroll both ways.
+  function drawTyped(T, t) {
+    if (t >= T.w[1]) T.done = true;
+    const back = T.done && t < T.w[1];
+    T.tl.progress(back ? T.bis : prog(t, T.w, T.bis));
+    T.box.style.opacity = back ? map(t, T.w[0], T.w[0] + .4 * (T.w[1] - T.w[0])).toFixed(3) : '1';
+  }
   let TY = {};
   function buildTyped() {
+    const TY0 = { ...TY };
     const d = S.variant === 'd' || S.variant === 'e', art = S.variant === 'b';
     // B: the who line types one line per drawing (its lines start with wind, sun and water), holds while the last one
     // undraws, then leaves; the statement types on only after that, so it has the colour to itself
     TY.who = { ...typed($('[data-typed="who"]'), WHO[S.who], 'slide'), w: art ? [-.1, 2.4, 2.6, 2.85] : [.5, 1.4, 1.75, 2.0] };
     // B: the who line leaves just after the water drawing has gone, and the statement types on as it goes (no plain colour
-    // between them), then drifts up (frame k)
+    // between them), then holds still in the middle until Podne covers it
     TY.stmt = { ...typed($('[data-typed="stmt"]'), STMT[S.stmt], d ? 'untype' : 'none'), w: d ? [2.0, 2.7, 2.9, 3.25] : art ? [2.65, 3.35, 99, 100] : [2.0, 2.7, 99, 100] };
-    $('[data-typed="stmt"]').style.transform = '';
-    // Balans: on desktop the lines type in place, one after the other, drifting up; on phones they flow up with the
-    // thumb a screen apart and type as they come in (frame b)
-    TY.b0 = { ...typed($('[data-btyped="0"]'), BAL[0], phone ? 'none' : 'slide'), w: phone ? BF.type(0) : [.8, 1.4, 1.85, 2.1] };
-    TY.b1 = { ...typed($('[data-btyped="1"]'), BAL[1], 'none'), w: phone ? BF.type(1) : [2.05, 2.65, 99, 100] };
+    // Balans: the lines type in place, the second replacing the first, with short holds (V3: a frame of text is short)
+    TY.b0 = { ...typed($('[data-btyped="0"]'), BAL[0], 'slide'), w: [.7, 1.2, 1.5, 1.7] };
+    TY.b1 = { ...typed($('[data-btyped="1"]'), BAL[1], 'none'), w: [1.7, 2.2, 99, 100] };
+    // a rebuild (resize, a new line from the bench) keeps what has already typed, unless the text changed
+    ['who', 'stmt', 'b0', 'b1'].forEach((k) => { TY[k].done = !!(TY0[k] && TY0[k].done && TY0[k].text === TY[k].text); });
   }
 
   /* ---------------- frame 2 D: the column of giant words (Joby /experience ScrollyText, tables from Frame by Frame) ---------------- */
@@ -782,15 +800,27 @@ html.docked .bench { top: 0; bottom: 0; right: 0; width: 344px; max-height: none
   function geo() {
     const PW = phone ? W : W * .59, PH = phone ? H * .49 : H;
     panel.style.width = PW + 'px'; panel.style.height = PH + 'px';
+    SC.w.el.classList.toggle('short', !phone && H < 560);
+    figs.forEach((f) => { f.style.display = ''; });
+    const tallest = (els) => Math.max(...els.map((e) => e.offsetHeight));
     if (!phone) {
-      const tx = PW + W * .035, tw = Math.min(W * .27, W - tx - 32), fw = Math.min(W * .16, 280);
+      const tx = PW + W * .035, tw = Math.min(W * .27, W - tx - 32);
       texts.forEach((t) => { t.style.left = tx + 'px'; t.style.top = 'auto'; t.style.bottom = H * .08 + 'px'; t.style.width = tw + 'px'; });
-      figs.forEach((f) => { f.style.width = fw + 'px'; f.style.left = (W - 40 - fw) + 'px'; f.style.top = '84px'; f.style.bottom = 'auto'; });
+      // the drawing hangs from the top right; on a short screen (a landscape phone) it shrinks to the room above the text
+      let fw = Math.min(W * .16, 280);
+      figs.forEach((f) => { f.style.width = fw + 'px'; });
+      const room = H - H * .08 - tallest(texts) - 84 - 16, over = tallest(figs) - room;
+      if (over > 0) fw -= over;
+      figs.forEach((f) => { f.style.width = fw + 'px'; f.style.left = (W - 40 - fw) + 'px'; f.style.top = '84px'; f.style.bottom = 'auto'; f.style.display = fw < 72 ? 'none' : ''; });
     } else {
-      // the drawing sits beside the text, level with its number, and the text column stops short of it
-      const fw = Math.min(W * .3, 132);
-      texts.forEach((t) => { t.style.left = '18px'; t.style.top = (PH + 22) + 'px'; t.style.bottom = 'auto'; t.style.width = (W - 36 - fw - 16) + 'px'; });
-      figs.forEach((f) => { f.style.width = fw + 'px'; f.style.left = (W - 18 - fw) + 'px'; f.style.top = (PH + 22) + 'px'; f.style.bottom = 'auto'; });
+      // Joby /experience on a phone: the text runs full width under the photo and the drawing sits in its box in the
+      // bottom-right corner, about 44% of the width; on a short phone the box shrinks to the room left under the text
+      texts.forEach((t) => { t.style.left = '18px'; t.style.top = (PH + 22) + 'px'; t.style.bottom = 'auto'; t.style.width = (W - 36) + 'px'; });
+      let fw = W * .44;
+      figs.forEach((f) => { f.style.width = fw + 'px'; });
+      const room = H - (PH + 22 + tallest(texts)) - 18 - 18, over = tallest(figs) - room;
+      if (over > 0) fw -= over;
+      figs.forEach((f) => { f.style.width = fw + 'px'; f.style.left = (W - 18 - fw) + 'px'; f.style.top = 'auto'; f.style.bottom = 'calc(env(safe-area-inset-bottom, 0px) + 18px)'; f.style.display = fw < 72 ? 'none' : ''; });
     }
     g = { PW, PH };
   }
@@ -832,7 +862,7 @@ html.docked .bench { top: 0; bottom: 0; right: 0; width: 344px; max-height: none
   /* ---------------- frame 6, berza: the day-ahead price, hour by hour (placeholder figures, €/MWh) ---------------- */
   const PRICE = [92, 85, 80, 78, 79, 86, 105, 128, 121, 98, 72, 55, 41, 38, 46, 63, 90, 130, 158, 149, 131, 118, 104, 96], FIXED = 95;
   const PY = (v) => 280 - (v - 30) / (170 - 30) * 260, PX = (i) => i * 1000 / 23;
-  const xLine = $('[data-xline]'), xFixed = $('[data-xfixed]'), xDot = $('[data-xdot]'), xChart = $('[data-xchart]'), xFixLab = $('[data-xfixlab]'), xArea = $('[data-xarea]'), xClip = $('[data-xclip]'), xFArea = $('[data-xfarea]'), xClip2 = $('[data-xclip2]');
+  const xLine = $('[data-xline]'), xFixed = $('[data-xfixed]'), xDot = $('[data-xdot]'), xChart = $('[data-xchart]'), xFixLab = $('[data-xfixlab]'), xArea = $('[data-xarea]'), xClip = $('[data-xclip]');
   [xLine, xFixed].forEach((p) => p.setAttribute('pathLength', '1'));
   // the chart is laid out in real pixels (a stretched viewBox breaks the dash); where the line has got to is tracked
   // by length along it (the dash) and by hour (the cursor), so the dot sits on the tip
@@ -845,17 +875,17 @@ html.docked .bench { top: 0; bottom: 0; right: 0; width: 344px; max-height: none
     xLine.setAttribute('d', pts.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(''));
     xArea.setAttribute('d', xLine.getAttribute('d') + `L${ccw} ${cch}L0 ${cch}Z`);
     xFixed.setAttribute('d', `M0 ${(PY(FIXED) * sy).toFixed(1)}H${ccw}`);
-    xFArea.setAttribute('d', `M0 ${(PY(FIXED) * sy).toFixed(1)}H${ccw}V${cch}H0Z`);
     segL = pts.slice(1).map(([x, y], i) => Math.hypot(x - pts[i][0], y - pts[i][1])); totL = segL.reduce((a, b) => a + b, 0) || 1;
   }
   const xNight = $('[data-night]'), xIn = $('[data-xin]'), xPrice = $('[data-xprice]'), xHour = $('[data-xhour]');
   const xsay = $$('[data-xsay]');
-  // the day draws over 1.4 screens and our flat price takes over straight after (a screen), so there is no pause between them
-  masked(xsay[0], 'x', .8, 2.35, false); masked(xsay[1], 'x', 2.4, 99, false);
+  // V3: the day draws over 0.7 of a screen and our flat price straight after it over 0.45, so the chart plays in about two
+  // flicks; the grey fill under the day stays, the green band under our price is gone (the user prefers the thin line)
+  masked(xsay[0], 'x', .8, 1.65, false); masked(xsay[1], 'x', 1.7, 99, false);
   function renderBerza(t) {
     // the night is already there under Balans; its content comes up as Balans lifts away
     xIn.style.opacity = map(t, .55, .85).toFixed(3);
-    const dl = map(t, .9, 2.3), hr = dl * 23, i = Math.min(22, Math.floor(hr)), fr = hr - i;
+    const dl = map(t, .9, 1.6), hr = dl * 23, i = Math.min(22, Math.floor(hr)), fr = hr - i;
     const cum = segL.slice(0, i).reduce((a, b) => a + b, 0) + segL[i] * fr;
     xLine.style.strokeDashoffset = (1 - cum / totL).toFixed(4);
     const v = lerp(PRICE[i], PRICE[i + 1], fr);
@@ -863,9 +893,9 @@ html.docked .bench { top: 0; bottom: 0; right: 0; width: 344px; max-height: none
     xClip.setAttribute('width', (PX(hr) / 1000 * ccw).toFixed(1));
     xDot.style.opacity = dl > 0 ? '1' : '0';
     xPrice.textContent = `${Math.round(v)} €`; xHour.textContent = `${String(Math.min(23, Math.round(hr))).padStart(2, '0')}:00 · MWh, dan unapred`;
-    const fx = map(t, 2.3, 3.3); xFixed.style.strokeDashoffset = (1 - fx).toFixed(4);
-    xClip2.setAttribute('width', (fx * ccw).toFixed(1)); xArea.style.opacity = (1 - .65 * fx).toFixed(3);
-    xFixLab.style.top = (PY(FIXED) / 300 * cch) + 'px'; xFixLab.style.opacity = map(t, 2.6, 3.0).toFixed(3);
+    const fx = map(t, 1.6, 2.05); xFixed.style.strokeDashoffset = (1 - fx).toFixed(4);
+    xArea.style.opacity = (1 - .65 * fx).toFixed(3);
+    xFixLab.style.top = (PY(FIXED) / 300 * cch) + 'px'; xFixLab.style.opacity = map(t, 1.8, 2.05).toFixed(3);
   }
 
   /* ---------------- frame 7, poreklo: Breakthrough's cascade (lines 100 px in from the right, 1.5 − 0.2·i s, 0.3 apart) ---------------- */
@@ -875,16 +905,15 @@ html.docked .bench { top: 0; bottom: 0; right: 0; width: 344px; max-height: none
     if (QT && QT.sp) QT.sp.revert();
     const sp = SplitText.create(qBox, { type: 'lines', linesClass: 'ql' }), tl = G.timeline({ paused: true }), X = phone ? 36 : 100; let o = 0;
     sp.lines.forEach((l, c) => { tl.set(l, { x: X, autoAlpha: 0 }, 0).to(l, { x: 0, duration: Math.max(.6, 1.5 - c * .2), ease: 'circ.out' }, o).to(l, { autoAlpha: 1, duration: .001 }, o + .05); o += .3; });
-    tl.progress(1).progress(0); QT = { sp, tl };
-    qWho.style.top = (qBox.offsetTop + qBox.offsetHeight + (phone ? 18 : Math.max(28, H * .045))) + 'px';
-    // phones: the origin card starts .72 of a screen under the quote's top, at the bottom edge, and drifts into view with it
-    qCard.style.top = phone ? (qBox.offsetTop + H * .72) + 'px' : '';
-    fades[0].a = phone ? 1.5 : 2.0; fades[1].a = phone ? 1.6 : 2.2;
+    tl.progress(1).progress(0); QT = { sp, tl, done: !!(QT && QT.done) };
+    // desktop: the name just under the last line; phones: the name bottom left and the card bottom right (CSS)
+    qWho.style.top = phone ? '' : (qBox.offsetTop + qBox.offsetHeight + Math.max(28, H * .045)) + 'px';
   }
-  // the column after the card has landed drifts up with the thumb: a sixteenth of the scroll on desktop, .15 on phones
-  const qFlow = (t) => clamp(t - 1.3, 0, 2.4) * H * (phone ? .15 : .06);
   const fades = [{ el: qWho, sc: 'q', a: 2.0, b: 99 }, { el: qCard, sc: 'q', a: 2.2, b: 99 }].map((f) => ({ ...f, on: false }));
-  function playFade(f, on) { G.to(f.el, on ? { autoAlpha: 1, y: 0, duration: .667, ease: 'snappy', overwrite: true } : { autoAlpha: 0, y: '.6rem', duration: .25, ease: 'power2.in', overwrite: true }); }
+  function playFade(f, on) {
+    if (on && f.seen) { G.set(f.el, { y: 0 }); G.to(f.el, { autoAlpha: 1, duration: .2, ease: 'power1.out', overwrite: true }); return; }   // play once
+    if (on) f.seen = true;
+    G.to(f.el, on ? { autoAlpha: 1, y: 0, duration: .667, ease: 'snappy', overwrite: true } : { autoAlpha: 0, y: '.6rem', duration: .25, ease: 'power2.in', overwrite: true }); }
   fades.forEach((f) => G.set(f.el, { autoAlpha: 0, y: '1.9rem' }));
 
   // the picture under the quote: a muted loop that plays on its own while Poreklo is on screen (Breakthrough's quote field);
@@ -916,6 +945,7 @@ html.docked .bench { top: 0; bottom: 0; right: 0; width: 344px; max-height: none
   const fillWords = $$('.fw', fillEl);
   const cvSlides = $$('#sc-u .cv-slide').map((s) => ({ s, box: $('.cv-img', s), img: $('.cv-img img', s), text: $('.cv-text', s) }));
   const CN = cvSlides.length, C0 = 1.9; let cg = null;
+  let fillMax = 0; const fillPos = (p) => (fillMax = Math.max(fillMax, p));   // once a word has filled it stays filled
   const cubicIO = (x) => (x = clamp(x), x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2);
   const lerpR = (a, b, t) => ({ x: lerp(a.x, b.x, t), y: lerp(a.y, b.y, t), s: lerp(a.s, b.s, t) });
   function cvGeo() {
@@ -977,7 +1007,7 @@ html.docked .bench { top: 0; bottom: 0; right: 0; width: 344px; max-height: none
     return d0 + CR * CV + (t - CP);
   };
   function renderColumn(t) {
-    const w = W * .76, h = Math.min(H * .49, w * 1.405), left = W * .197, pitch = H * .925, tt = Math.min(t, 5.6);
+    const w = W * .76, h = Math.min(H * .49, w * 1.405), left = W * .197, pitch = H * .925, tt = Math.min(t, UO());
     const lift_ = colTravel(tt) * H, y0 = H * 1.15 - lift_;   // the first box's top (it shows .4 of its height lower, being scaled from its foot)
     fillEl.style.opacity = uKick.style.opacity = '1';
     fillEl.style.transform = uKick.style.transform = `translate3d(0, ${(-lift_).toFixed(1)}px, 0)`;
@@ -995,9 +1025,9 @@ html.docked .bench { top: 0; bottom: 0; right: 0; width: 344px; max-height: none
     });
   }
   function renderKupci(t) {
-    if (phone) { const n = fillWords.length, pos = map(t, .3, 1.8) * (n + 4); fillWords.forEach((w, i) => { w.style.opacity = (.16 + .84 * clamp((pos - i) / 4)).toFixed(3); }); renderColumn(t); return; }
+    if (phone) { const n = fillWords.length, pos = fillPos(map(t, .3, 1.8) * (n + 4)); fillWords.forEach((w, i) => { w.style.opacity = (.16 + .84 * clamp((pos - i) / 4)).toFixed(3); }); renderColumn(t); return; }
     if (!cg) cvGeo();
-    const n = fillWords.length, pos = map(t, .3, 1.6) * (n + 4);
+    const n = fillWords.length, pos = fillPos(map(t, .3, 1.6) * (n + 4));
     fillWords.forEach((w, i) => { w.style.opacity = (.16 + .84 * clamp((pos - i) / 4)).toFixed(3); });
     // the sentence drifts up with the thumb (a tenth of the scroll) while it fills, then fades as the conveyor comes in
     const S = Math.max(0, t - C0), P = cvPos(S), tg = map(S, CT.entry * .2, CT.entry * .7), dr = clamp(t - .8, 0, 1.6) * H * .1;
@@ -1020,9 +1050,9 @@ html.docked .bench { top: 0; bottom: 0; right: 0; width: 344px; max-height: none
   /* ---------------- frame 9, kontakt: the photo opens between two words (Joby /company), then the form ---------------- */
   const zw = $$('[data-zw]'), zph = $('[data-zph]'), zImg = $('img', zph), zSub = $('[data-zsub]'), zForm = $('[data-zform]');
   let zg = null;
-  function zGeo() { zw.forEach((w) => { w.style.fontSize = phone ? '9.2vw' : ''; }); zg = { w0: zw[0].offsetWidth, w1: zw[1].offsetWidth, lh: zw[0].offsetHeight, pad: phone ? 10 : 18 }; }
+  function zGeo() { G.set(zForm, { yPercent: phone ? 0 : -46 }); zw.forEach((w) => { w.style.fontSize = phone ? '9.2vw' : ''; }); zg = { w0: zw[0].offsetWidth, w1: zw[1].offsetWidth, lh: zw[0].offsetHeight, pad: phone ? 10 : 18 }; }
   masked($('[data-zhead]'), 'z', 2.0, 99, false);
-  fades.push({ el: zSub, sc: 'z', a: 2.3, b: 99, on: false }, { el: zForm, sc: 'z', a: 2.35, b: 99, on: false });
+  fades.push({ el: zSub, sc: 'z', a: 2.1, b: 99, on: false }, { el: zForm, sc: 'z', a: 2.15, b: 99, on: false });
   G.set([zSub, zForm], { autoAlpha: 0, y: '1.9rem' });
   function renderKontakt(t) {
     if (!zg) zGeo();
@@ -1043,9 +1073,8 @@ html.docked .bench { top: 0; bottom: 0; right: 0; width: 344px; max-height: none
     rx = lerp(rx, 0, b); ry = lerp(ry, 0, b); rw = lerp(rw, W, b); rh = lerp(rh, H, b);
     zph.style.visibility = a > 0 ? 'inherit' : 'hidden';
     zph.style.clipPath = `inset(${ry.toFixed(1)}px ${(W - rx - rw).toFixed(1)}px ${(H - ry - rh).toFixed(1)}px ${rx.toFixed(1)}px round ${(8 * (1 - b)).toFixed(1)}px)`;
-    // once open, the photo flies on under the form (3% of a screen per screen, pushing in); the form itself stays still
-    const fz = clamp(t - 2.05, 0, 1.4);
-    zImg.style.transform = `translate3d(0, ${(-3 * fz).toFixed(3)}%, 0) scale(${((1.25 - .25 * b) * (1 + .1 * fz / 1.4)).toFixed(4)})`;
+    // the photo settles as it opens, then stays still: this is the last frame, and the page ends once the form is in
+    zImg.style.transform = `scale(${(1.25 - .25 * b).toFixed(4)})`;
   }
 
   /* the form: nothing is sent anywhere in this mock; sending plays the plug going into the outlet */
@@ -1091,7 +1120,7 @@ html.docked .bench { top: 0; bottom: 0; right: 0; width: 344px; max-height: none
       ARTS[j].style.transform = `translate3d(0, ${(((a + u + UD) / 2 - clamp(t, a - .1, u + UD + .1)) * H * ARTV()).toFixed(2)}px, 0)`;
     });
   }
-  const kDim = $('[data-dim]'), stmtBox = $('[data-typed="stmt"]'), bTyped = $$('[data-btyped]');
+  const kDim = $('[data-dim]');
   // a card rising from below: corners flatten as it lands (e²), its photo starts higher and catches up (Joby SectionEntry)
   function rise(sc, t, enter) { const e = map(t, 0, enter), ee = ease(e); sc.card.style.transform = `translate3d(0, ${((1 - ee) * 100).toFixed(3)}%, 0)`; const r = R * (1 - e * e); sc.card.style.borderRadius = r > .3 ? `${r.toFixed(1)}px ${r.toFixed(1)}px 0 0` : '0'; return { e, ee, mty: -(1 - ee) * 60 }; }
   // a frame lifting off: it slides up with rounded bottom corners and its photo lags behind
@@ -1105,13 +1134,11 @@ html.docked .bench { top: 0; bottom: 0; right: 0; width: 344px; max-height: none
   // window [a, b] it climbs k of a screen per screen of scroll, from below its place to above it, zoomed just enough to keep
   // photo under the frame's edges, and pushes in a little
   const fly = (t, a, b, k) => { const L = b - a, u = clamp(t - a, 0, L); return { ty: (L / 2 - u) * k * 100, s: (1.02 + k * L) * (1 + .04 * u / L) }; };
-  // Balans on phones: the two lines flow up with the thumb at half its speed, a screen apart, and type as they come in
-  // (the first while the frame scrolls in, the second as it rises from the bottom edge); top: where each starts, in screens
-  const BF = { v: .5, top: [.4, 1.4], type: (i) => (i ? [1.6, 2.3, 99, 100] : [.35, .95, 99, 100]) };
-  const balY = (i, t) => (phone ? (BF.top[i] - Math.max(0, t - .8) * BF.v) * H : ((i ? 2.6 : 1.45) - clamp(t, i ? 1.95 : .7, i ? 3.3 : 2.2)) * H * .15);
   const R_ = {
     h(t) {
-      const z12 = ease(map(t, 1.3, 2.0)), z23 = ease(map(t, 3.0, 3.7));
+      // V3: the zoom-through between stills takes 0.35 of a screen (was 0.7) and its haze is half as white, so a flick
+      // lands on a photo, not on the flash between two (about 16% of the hero is a hand-off, was 32%)
+      const z12 = ease(map(t, 1.475, 1.825)), z23 = ease(map(t, 3.175, 3.525));
       // each still flies on over its ground while it shows (no still holds): it climbs 7% of a screen per screen of scroll
       // and pushes in 1.05 → 1.27, so every stretch of scroll moves the picture, not only the cross-fades. The push keeps
       // enough photo below the frame for the climb.
@@ -1120,27 +1147,24 @@ html.docked .bench { top: 0; bottom: 0; right: 0; width: 344px; max-height: none
       const y = [-7 * t, -7 * (t - 1.3), -7 * (t - 3.0)];
       const o = [1 - map(z12, .45, .9), map(z12, .35, .8) * (1 - map(z23, .45, .9)), map(z23, .35, .8)];
       heroImgs.forEach((el, i) => { el.style.transform = `translate3d(0, ${y[i].toFixed(3)}%, 0) scale(${s[i].toFixed(4)})`; el.style.opacity = o[i].toFixed(3); el.style.visibility = o[i] > .001 ? 'inherit' : 'hidden'; });
-      haze.style.opacity = (.62 * bell(map(t, 1.3, 2.0)) + .62 * bell(map(t, 3.0, 3.7))).toFixed(3);
+      haze.style.opacity = (.3 * bell(map(t, 1.475, 1.825)) + .3 * bell(map(t, 3.175, 3.525))).toFixed(3);
       const l = lift(SC.h, t, 4.4, 5.0); if (l <= 0) { SC.h.card.style.transform = 'none'; SC.h.card.style.borderRadius = '0'; }
       setMedia(SC.h, l * 40, 1);
     },
     k(t) {
-      if (TY.who) { TY.who.tl.progress(prog(t, TY.who.w, TY.who.bis)); TY.stmt.tl.progress(prog(t, TY.stmt.w, TY.stmt.bis)); }
+      if (TY.who) { drawTyped(TY.who, t); drawTyped(TY.stmt, t); }
       const v = S.variant;
-      // a statement that holds until Podne covers it drifts up with the thumb (a fifth of the scroll) instead of standing still
-      if (TY.stmt && TY.stmt.w[2] > 50) stmtBox.style.transform = `translate(-50%, calc(-50% - ${(Math.max(0, t - TY.stmt.w[0]) * H * .2).toFixed(2)}px))`;
       if (v === 'b') renderArt(t);
       if (v === 'e') renderRing(t);
       if (v === 'd') {
         const t0 = 3.0; $('[data-colk]').style.opacity = (map(t, t0, t0 + .3) * (1 - map(t, 6.3, 6.6))).toFixed(3);
         colWords.forEach((w, k) => { const yN = colTop(k) - (t - t0); w.style.transform = `translate3d(0, ${((yN + look(DROP, yN)) * H).toFixed(2)}px, 0) scale(${look(SCALE, yN).toFixed(4)})`; w.style.visibility = yN < -.6 || yN > 1.2 ? 'hidden' : 'inherit'; w.style.opacity = map(yN, -.04, .14).toFixed(3); });
       }
-      kDim.style.opacity = (.22 * map(t, SC.k.len - 1.5, SC.k.len)).toFixed(3);
+      { const pk = SC.p.start - SC.k.start; kDim.style.opacity = (.22 * map(t, pk, pk + .8)).toFixed(3); }   // dims under the rising card
     },
     p(t) {
-      const r = rise(SC.p, t, 1.5), o = scrollOut(SC.p, t, 4.1, 4.7), f = fly(t, 0, 4.7, .04);
+      const r = rise(SC.p, t, .8), o = scrollOut(SC.p, t, 3.4, 4.0), f = fly(t, 0, 4.0, .04);
       setMedia(SC.p, (o > 0 ? o * 40 : r.mty) + f.ty, f.s);
-      nums.forEach((n, i) => { n.style.transform = `translate3d(0, ${numY(i, t).toFixed(2)}px, 0)`; });
     },
     w(t) {
       const i = scrollIn(SC.w, t, 0, .6), o = i >= 1 ? scrollOut(SC.w, t, 5.4, 6.2) : 0; wCardY = ((1 - i) - o) * H;
@@ -1149,29 +1173,29 @@ html.docked .bench { top: 0; bottom: 0; right: 0; width: 344px; max-height: none
     },
     b(t) {
       // 5 → 6: Balans lifts away with its bottom corners rounding (Joby's hero exit), uncovering the night
-      SC.b.el.style.zIndex = t > 3.2 ? '48' : '45';
-      const i = scrollIn(SC.b, t, 0, .8), l = lift(SC.b, t, 3.2, 4.2), f = fly(t, 0, 4.2, .04);
+      SC.b.el.style.zIndex = t > 2.6 ? '48' : '45';
+      const i = scrollIn(SC.b, t, 0, .8), l = lift(SC.b, t, 2.6, 3.6), f = fly(t, 0, 3.6, .04);
       setMedia(SC.b, (l > 0 ? l * 40 : -(1 - i) * 40) + f.ty, f.s);
-      if (TY.b0) { TY.b0.tl.progress(prog(t, TY.b0.w, TY.b0.bis)); TY.b1.tl.progress(prog(t, TY.b1.w, TY.b1.bis)); }
-      bTyped.forEach((el, k) => { el.style.transform = `translate3d(0, ${balY(k, t).toFixed(2)}px, 0)`; });
+      if (TY.b0) { drawTyped(TY.b0, t); drawTyped(TY.b1, t); }
     },
     x(t) {
       renderBerza(t);
       // 6 → 7: Berza moves up a whole screen on the same eased curve and over the same 1.3 screens as the quote card rises
       // (Breakthrough: graph exit at graphStart + 4.45 to 5.75 = quoteStart − .2 to + 1.1)
-      const v = t - 3.4; SC.x.card.style.transform = v > 0 ? `translate3d(0, ${(-cubicIO(map(v, 0, 1.3)) * 100).toFixed(3)}%, 0)` : 'none';
+      const v = t - 2.4; SC.x.card.style.transform = v > 0 ? `translate3d(0, ${(-cubicIO(map(v, 0, 1.3)) * 100).toFixed(3)}%, 0)` : 'none';
     },
     q(t) {
       // Breakthrough HomeQuote: from a screen down to landed over 1.3 screens with 7% margins closing; picture at 40%, text at 87%
       const card = SC.q.card, le = 1 - cubicIO(map(t, 0, 1.3)), ins = le * H * .07;
       card.style.transform = `translate3d(0, ${(le * 100).toFixed(3)}%, 0)`; card.style.borderRadius = '0';
       card.style.clipPath = le > 0 ? `inset(${ins.toFixed(1)}px round ${(1 + 4 * le).toFixed(1)}px)` : 'none';
-      const o = scrollOut(SC.q, t, 3.7, 4.5), f = fly(t, 0, 4.5, .04);
+      const o = scrollOut(SC.q, t, 2.7, 3.5), f = fly(t, 0, 3.5, .04);
       setMedia(SC.q, (o > 0 ? o * 40 : -le * 60) + f.ty, f.s);
-      qCol.style.transform = `translate3d(0, calc(${(-le * 13).toFixed(2)}% - ${qFlow(t).toFixed(2)}px), 0)`;
-      if (QT) QT.tl.progress(clamp((t - .8) / 1.0));
+      qCol.style.transform = `translate3d(0, ${(-le * 13).toFixed(2)}%, 0)`;   // the column rides in with the card, then holds still
+      // the cascade plays with the scroll once; coming back into it, the finished quote fades with the scroll instead
+      if (QT) { const q = clamp((t - .8) / 1.0); if (q >= 1) QT.done = true; QT.tl.progress(QT.done ? 1 : q); qBox.style.opacity = QT.done && q < 1 ? map(t, .8, 1.2).toFixed(3) : '1'; }
     },
-    u(t) { const i = scrollIn(SC.u, t, 0, .8); if (i >= 1) scrollOut(SC.u, t, 5.6, 6.4); renderKupci(t); },
+    u(t) { const i = scrollIn(SC.u, t, 0, .8); if (i >= 1) scrollOut(SC.u, t, UO(), UO() + .8); renderKupci(t); },
     z(t) { scrollIn(SC.z, t, 0, .8); renderKontakt(t); },
   };
 
@@ -1179,20 +1203,17 @@ html.docked .bench { top: 0; bottom: 0; right: 0; width: 344px; max-height: none
   function frame(force) {
     const S_ = clamp(scrollPos() / unit, 0, total);
     if (!force && Math.abs(S_ - lastS) < 1e-5) return; lastS = S_;
-    // phones: the bar slides away on the way down (the content flows up under it) and comes back on the way up or near the top
-    if (phone) { const d = S_ - barS; if (S_ < .5 || Math.abs(d) > .04) { const away = S_ >= .5 && d > 0; if (away !== barAway) { barAway = away; barEl.classList.toggle('away', away); } barS = S_; } }
-    else if (barAway) { barAway = false; barEl.classList.remove('away'); }
     let cur = 'h';
     for (const id of IDS) {
       const sc = SC[id], t = S_ - sc.start, vis = t >= 0 && t < sc.len + (id === 'z' ? 9 : 0);
       sc.el.style.visibility = vis || (id === 'h' && t < 0) ? 'visible' : 'hidden';
-      if (vis) { R_[id](t); if (t > (id === 'h' || id === 'k' || id === 'w' ? .6 : id === 'p' ? 1.2 : .8)) cur = id; }
+      if (vis) { R_[id](t); if (t > (id === 'h' || id === 'k' || id === 'w' ? .6 : .8)) cur = id; }
     }
     if (S_ < SC.k.start + .6) cur = 'h';
     for (const f of fades) { const t = S_ - SC[f.sc].start, inn = t >= f.a && t < f.b; if (inn !== f.on) { f.on = inn; playFade(f, inn); } }
-    zForm.style.pointerEvents = S_ - SC.z.start > 2.3 ? 'auto' : 'none';
+    zForm.style.pointerEvents = S_ - SC.z.start > 2.1 ? 'auto' : 'none';
     playClip(S_);
-    for (const tr of trig) { const t = S_ - SC[tr.sc].start, inn = t >= tr.a && t < tr.b; if (inn !== tr.on && tr.split) { tr.on = inn; if (inn) playIn(tr); else playOut(tr, t >= tr.b); } }
+    for (const tr of trig) { const t = S_ - SC[tr.sc].start, inn = t >= tr.a && t < tr.b; if (inn !== tr.on && tr.split) { tr.on = inn; if (inn) { if (tr.seen) showNow(tr); else { tr.seen = true; playIn(tr); } } else playOut(tr, t >= tr.b); } }
     { const onField = cur === 'k' || (cur === 'w' && S_ - SC.w.start < 1.6); const onPaper = (cur === 'w' && !onField) || cur === 'u' || (cur === 'z' && S_ - SC.z.start < 1.7); const m = onField ? 'field' : onPaper ? 'paper' : 'photo'; if (m !== barMode) setBarInk(m); }
     if (cur !== curName) { curName = cur; $('#bar-frame').textContent = NAMES[cur]; $('#pin').dataset.cur = cur; barC = null; }
     // šta radimo: wherever the photo panel sits under a piece of the bar, that piece goes white. The panel's box comes from
@@ -1206,8 +1227,7 @@ html.docked .bench { top: 0; bottom: 0; right: 0; width: 344px; max-height: none
     { const wt = S_ - SC.w.start, live = wt > WT.open[0] && wt < SC.w.len; if (live !== wLive) { wLive = live; SC.w.el.classList.toggle('live', live); } }
     $('#bench-hud').textContent = `screen ${S_.toFixed(2)} / ${total.toFixed(1)}`;
   }
-  let barMode = 'photo', barC = null, wLive = false, barS = 0, barAway = false;
-  const barEl = $('#bar');
+  let barMode = 'photo', barC = null, wLive = false;
   const barEls = ['#bar-frame', '#bar-mark', '#bar-ask'].map((q) => $(q));
   function setBarInk(mode) { barMode = mode; document.documentElement.style.setProperty('--bar-ink', mode === 'field' ? 'var(--field-ink)' : mode === 'paper' ? 'var(--paper-ink)' : '#FFFFFF'); }
 
@@ -1222,12 +1242,12 @@ html.docked .bench { top: 0; bottom: 0; right: 0; width: 344px; max-height: none
   addEventListener('hashchange', () => { if (location.hash === '#showcase') setShow(true); });
   { let n = 0, t0 = 0; $('.z-send').addEventListener('click', () => { const now = performance.now(); n = now - t0 < 450 ? n + 1 : 1; t0 = now; if (n === 3) { n = 0; setShow(!bench.hidden); } }); }
   dock();
-  const JUMP = [['01', 'h', .2], ['02', 'k', .2], ['03', 'p', 1.6], ['04', 'w', .7], ['05', 'b', .9], ['06', 'x', 1.8], ['07', 'q', 2.0], ['08', 'u', 1.2], ['09', 'z', 2.6]];
+  const JUMP = [['01', 'h', .2], ['02', 'k', .2], ['03', 'p', .9], ['04', 'w', .7], ['05', 'b', .9], ['06', 'x', 2.1], ['07', 'q', 2.3], ['08', 'u', 1.2], ['09', 'z', 2.25]];
   $('#jumps').innerHTML = JUMP.map(([n, id]) => `<button type="button" data-j="${id}">${n}</button>`).join('');
   $('#jumps').addEventListener('click', (e) => { const b = e.target.closest('[data-j]'); if (!b) return; const j = JUMP.find((x) => x[1] === b.dataset.j); go((SC[j[1]].start + j[2]) * unit); });
   function go(y) { if (lenisRef.l) lenisRef.l.scrollTo(y, { duration: 1.4 }); else scrollTo({ top: y, behavior: reduce ? 'auto' : 'smooth' }); }
   $('#bar-mark').addEventListener('click', (e) => { e.preventDefault(); go(0); });
-  $('#bar-ask').addEventListener('click', () => go((SC.z.start + 2.6) * unit));
+  $('#bar-ask').addEventListener('click', () => go((SC.z.start + SC.z.len) * unit));
   $('#who').innerHTML = WHO.map((w, i) => `<option value="${i}">${i + 1}. ${esc(w.replace(/\*/g, ''))}</option>`).join('');
   $('#stmt').innerHTML = STMT.map((w, i) => `<option value="${i}">${i + 1}. ${esc(w.replace(/\*/g, ''))}</option>`).join('');
   function renderBench() {
@@ -1320,7 +1340,6 @@ html.docked .bench { top: 0; bottom: 0; right: 0; width: 344px; max-height: none
   function rebuild() {
     W = pin.clientWidth || innerWidth; H = pin.offsetHeight || innerHeight; phone = W < 760; R = phone ? W * .12 : Math.min(160, W * .11);
     layout(); fitHero(); evenLabs(); g = null; geo(); fitCol(); fitRing(); cg = null; zg = null; buildQuote(); chartGeo(); buildCvText(); cvSlides.forEach(({ box, text }) => { box.style.transformOrigin = ''; text.style.transform = ''; });
-    numWindows(); bTyped.forEach((e) => { e.style.top = phone ? '0px' : ''; });
     trig.forEach((t) => t.make());
     buildTyped();
     lastS = -1; curName = ''; frame(true);
