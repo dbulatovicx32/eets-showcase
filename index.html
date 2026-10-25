@@ -663,9 +663,9 @@ html.docked .bench { top: 0; bottom: 0; right: 0; width: 344px; max-height: none
     if (S.variant === 'd') S.variant = 'e'; // the column is out (user, 2026-10-22); it stays in V1
     const s = SC; s.h.start = 0; s.h.len = 5.0;
     s.k.start = 4.4; s.k.len = KLEN[S.variant];
-    // V3: the statement holds still for 0.4 of a screen once it has typed (B), then Podne rises over it in 0.8, as before
-    // the scroll-feel commit
-    s.p.start = s.k.start + s.k.len - (S.variant === 'b' ? 1.65 : .8); s.p.len = 4.0;
+    // V3: Podne rises in 0.8, as before the scroll-feel commit; in B it starts 0.2 of a screen after the statement begins
+    // to slide up (buildTyped), so the slide reads on its own first
+    s.p.start = s.k.start + s.k.len - (S.variant === 'b' ? .95 : .8); s.p.len = 4.0;
     s.w.start = s.p.start + 3.4; s.w.len = 6.2;
     // V3: the frames whose text holds still are short (round 4 V3 plan): Balans 3.2 → 2.6, Berza 3.4 → 2.4, Poreklo
     // 3.7 → 2.7, and the page ends once Kontakt's form is in
@@ -720,16 +720,20 @@ html.docked .bench { top: 0; bottom: 0; right: 0; width: 344px; max-height: none
     else if (exit === 'untype') { let q = inDur + .31; const ws = $$('.tw', box); tl.set(box.firstChild, { y: 0 }, 0); ws.forEach((w) => { tl.to(w, { autoAlpha: 0, duration: .001 }, q); q += .1; }); tl.to(box.firstChild, { y: -20, ease: 'power2.in', duration: q - inDur }, inDur + .01); }
     else tl.to({}, { duration: .001 }, inDur);
     tl.progress(1).progress(0);
-    return { tl, bis: inDur / tl.duration(), box, text, done: false };
+    return { tl, bis: inDur / tl.duration(), first: .26 / tl.duration(), box, text, done: false };   // first: where the first word shows
   }
-  const prog = (t, w, bis) => (t < w[1] ? clamp((t - w[0]) / (w[1] - w[0]), 0, bis) : clamp((t - w[2]) / (w[3] - w[2]), bis, 1));
+  // an exit plays across its whole window (it was squeezed into the last quarter of it, so a line nearly popped out)
+  const prog = (t, w, bis) => (t < w[1] ? clamp((t - w[0]) / (w[1] - w[0]), 0, bis) : bis + (1 - bis) * map(t, w[2], w[3]));
   // keep it typed: once a line has typed on it stays typed; coming back into its typing window (from below, or on a later
   // pass down) it fades with the scroll instead of untyping word by word. Exits still follow the scroll both ways.
   function drawTyped(T, t) {
     if (t >= T.w[1]) T.done = true;
     const back = T.done && t < T.w[1];
     T.tl.progress(back ? T.bis : prog(t, T.w, T.bis));
-    T.box.style.opacity = back ? map(t, T.w[0], T.w[0] + .4 * (T.w[1] - T.w[0])).toFixed(3) : '1';
+    // coming back, it fades over the 0.2 of a screen where its first word would show, so it is gone before the line
+    // before it returns
+    const a = T.w[0] + T.first * (T.w[1] - T.w[0]);
+    T.box.style.opacity = back ? map(t, a, a + .2).toFixed(3) : '1';
   }
   let TY = {};
   function buildTyped() {
@@ -738,9 +742,11 @@ html.docked .bench { top: 0; bottom: 0; right: 0; width: 344px; max-height: none
     // B: the who line types one line per drawing (its lines start with wind, sun and water), holds while the last one
     // undraws, then leaves; the statement types on only after that, so it has the colour to itself
     TY.who = { ...typed($('[data-typed="who"]'), WHO[S.who], 'slide'), w: art ? [-.1, 2.4, 2.6, 2.85] : [.5, 1.4, 1.75, 2.0] };
-    // B: the who line leaves just after the water drawing has gone, and the statement types on as it goes (no plain colour
-    // between them), then slides up with the thumb until Podne covers it (frame k: the one line that moves, by the user's choice)
-    TY.stmt = { ...typed($('[data-typed="stmt"]'), STMT[S.stmt], d ? 'untype' : 'none'), w: d ? [2.0, 2.7, 2.9, 3.25] : art ? [2.65, 3.35, 99, 100] : [2.0, 2.7, 99, 100] };
+    // B: the who line slides out as the water drawing undraws, the colour stays plain for 0.2 of a screen, then the
+    // statement types on in the middle, holds still for 0.7 and slides up with the thumb until Podne covers it (the user,
+    // 26 October: it should land with impact; frame k)
+    TY.stmt = { ...typed($('[data-typed="stmt"]'), STMT[S.stmt], d ? 'untype' : 'none'), w: d ? [2.0, 2.7, 2.9, 3.25] : art ? [2.85, 3.55, 99, 100] : [2.0, 2.7, 99, 100] };
+    TY.stmt.slide = TY.stmt.w[1] + .7;
     $('[data-typed="stmt"]').style.transform = '';
     // Balans: the lines type in place, the second replacing the first, with short holds (V3: a frame of text is short)
     TY.b0 = { ...typed($('[data-btyped="0"]'), BAL[0], 'slide'), w: [.7, 1.2, 1.5, 1.7] };
@@ -1155,9 +1161,9 @@ html.docked .bench { top: 0; bottom: 0; right: 0; width: 344px; max-height: none
     k(t) {
       if (TY.who) { drawTyped(TY.who, t); drawTyped(TY.stmt, t); }
       const v = S.variant;
-      // the statement ("Mi trgujemo sa stilom") slides up with the thumb (a fifth of the scroll) until Podne covers it: the
-      // user kept this one slide (25 October); every other line of text on the page holds still
-      if (TY.stmt && TY.stmt.w[2] > 50) stmtBox.style.transform = `translate(-50%, calc(-50% - ${(Math.max(0, t - TY.stmt.w[0]) * H * .2).toFixed(2)}px))`;
+      // the statement ("Mi trgujemo sa stilom") holds still in the middle, then slides up with the thumb (a fifth of the
+      // scroll) until Podne covers it: the user kept this one slide; every other line of text on the page holds still
+      if (TY.stmt && TY.stmt.w[2] > 50) stmtBox.style.transform = `translate(-50%, calc(-50% - ${(Math.max(0, t - TY.stmt.slide) * H * .2).toFixed(2)}px))`;
       if (v === 'b') renderArt(t);
       if (v === 'e') renderRing(t);
       if (v === 'd') {
